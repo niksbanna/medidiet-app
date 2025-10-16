@@ -18,6 +18,7 @@ import { router } from 'expo-router';
 import { useHealth } from '../hooks/useHealth';
 import { UserProfile } from '../types/health';
 import { showWarningToast, showErrorToast, showSuccessToast } from '../utils/toast';
+import { mapConditionToSlug } from '../utils/conditionMapper';
 
 const { width } = Dimensions.get('window');
 
@@ -29,8 +30,8 @@ const MEDICAL_CONDITIONS = [
   'Thyroid Disorder',
   'Heart Disease',
   'Celiac Disease',
-  'IBS',
-  'PCOS',
+  'Irritable Bowel Syndrome',
+  'Polycystic Ovary Syndrome',
   'Other'
 ];
 
@@ -173,6 +174,16 @@ export default function OnboardingScreen() {
 
   const handleComplete = async () => {
     try {
+      // Get the condition display name
+      const conditionDisplay = formData.medicalCondition === 'Other' 
+        ? formData.customCondition 
+        : formData.medicalCondition;
+      
+      // Map the display name to a standardized slug
+      const conditionSlug = mapConditionToSlug(conditionDisplay);
+      
+      console.log(`[ONBOARDING] Mapping condition "${conditionDisplay}" to slug "${conditionSlug}"`);
+      
       const profile: UserProfile = {
         id: `user_${Date.now()}`,
         name: formData.name.trim(),
@@ -180,7 +191,8 @@ export default function OnboardingScreen() {
         gender: formData.gender as 'male' | 'female' | 'other',
         height: parseFloat(formData.height),
         weight: parseFloat(formData.weight),
-        medicalCondition: formData.medicalCondition === 'Other' ? formData.customCondition : formData.medicalCondition,
+        medicalCondition: conditionSlug, // Use the standardized slug
+        medicalConditionDisplay: conditionDisplay, // Store the display name for UI
         allergies: formData.allergies.split(',').map(a => a.trim()).filter(a => a),
         dietaryRestrictions: formData.dietaryRestrictions.split(',').map(d => d.trim()).filter(d => d),
         activityLevel: formData.activityLevel as any,

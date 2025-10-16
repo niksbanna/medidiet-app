@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { useHealth } from '../../hooks/useHealth';
 import { AIDietService } from '../../services/aiDietService';
 import { showSuccessToast, showWarningToast, showErrorToast } from '../../utils/toast';
+import { mapConditionToSlug } from '../../utils/conditionMapper';
 
 export default function ProfileScreen() {
   const { userProfile, updateUserProfile, clearUserProfile, currentPlan, mealLogs, getAdherenceRate } = useHealth();
@@ -77,7 +78,9 @@ export default function ProfileScreen() {
           updates.weight = parseFloat(editValue);
           break;
         case 'medicalCondition':
-          updates.medicalCondition = editValue;
+          // Store both the display name and the slug
+          updates.medicalConditionDisplay = editValue;
+          updates.medicalCondition = mapConditionToSlug(editValue);
           break;
       }
 
@@ -131,7 +134,7 @@ export default function ProfileScreen() {
               </View>
             </View>
             <Text style={styles.headerName}>{userProfile.name}</Text>
-            <Text style={styles.headerSubtitle}>{userProfile.medicalCondition}</Text>
+            <Text style={styles.headerSubtitle}>{userProfile.medicalConditionDisplay || userProfile.medicalCondition}</Text>
             <View style={styles.headerStats}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{daysActive}</Text>
@@ -219,8 +222,8 @@ export default function ProfileScreen() {
             <InfoRow
               icon="local-hospital"
               label="Medical Condition"
-              value={userProfile.medicalCondition}
-              onEdit={() => handleEditField('medicalCondition', userProfile.medicalCondition)}
+              value={userProfile.medicalConditionDisplay || userProfile.medicalCondition}
+              onEdit={() => handleEditField('medicalCondition', userProfile.medicalConditionDisplay || userProfile.medicalCondition)}
               isLast
             />
           </View>
@@ -269,7 +272,7 @@ export default function ProfileScreen() {
                 <MaterialIcons name="emoji-objects" size={32} color="#0066CC" />
                 <Text style={styles.insightTitle}>Your AI Health Assistant is Active</Text>
                 <Text style={styles.insightText}>
-                  Your personalized meal plan is optimized for {userProfile.medicalCondition.toLowerCase()}.
+                  Your personalized meal plan is optimized for {(userProfile.medicalConditionDisplay || userProfile.medicalCondition).toLowerCase()}.
                   Keep logging meals to help AI improve recommendations!
                 </Text>
                 <View style={styles.insightStats}>

@@ -125,30 +125,51 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
 - Limit saturated fats and processed foods
 - Include magnesium-rich foods for blood pressure support`,
       
-      'kidney disease': `
+      'kidney_disease': `
 - Protein restriction to 0.8g/kg body weight to reduce kidney burden
 - Limit phosphorus <800mg/day and avoid high-phosphorus foods
 - Control potassium based on lab values
 - Moderate sodium <2000mg/day for fluid balance
 - Monitor fluid intake as recommended by nephrologist`,
       
-      'thyroid disorder': `
+      'thyroid_disorder': `
 - Ensure adequate iodine but avoid excessive amounts
 - Include selenium-rich foods (Brazil nuts, fish) for thyroid function
 - Maintain consistent meal timing for medication absorption
 - Include iron-rich foods if hypothyroid
 - Limit goitrogenic foods if indicated`,
       
-      'heart disease': `
+      'heart_disease': `
 - Mediterranean diet pattern with emphasis on olive oil
 - Limit saturated fat <7% of calories, trans fat <1%
 - Include omega-3 fatty acids 2-3 times per week
 - High fiber intake for cholesterol management
-- Limit sodium <2000mg/day for heart health`
+- Limit sodium <2000mg/day for heart health`,
+
+      'celiac_disease': `
+- Strict avoidance of all gluten-containing foods (wheat, barley, rye)
+- Focus on naturally gluten-free whole foods
+- Ensure adequate fiber from gluten-free sources
+- Monitor for cross-contamination in food preparation
+- Include nutrient-dense foods to prevent deficiencies from restricted diet`,
+
+      'ibs': `
+- Identify and limit individual trigger foods through elimination diet
+- Consider low FODMAP approach as recommended by healthcare provider
+- Maintain regular meal timing and eating patterns
+- Stay well hydrated throughout the day
+- Include soluble fiber as tolerated to regulate bowel function`,
+
+      'pcos': `
+- Focus on low glycemic index foods to manage insulin resistance
+- Include anti-inflammatory foods rich in antioxidants
+- Maintain consistent protein intake (25-30% of calories)
+- Limit processed foods and added sugars
+- Include healthy fats from plant sources for hormone regulation`
     };
 
-    const key = condition.toLowerCase().replace(/\s+/g, '_');
-    return guidelines[key] || guidelines['diabetes']; // Default to diabetes guidelines
+    // The condition should already be in slug format from the onboarding process
+    return guidelines[condition] || guidelines['diabetes']; // Default to diabetes guidelines
   }
 
   private static calculateBMR(profile: UserProfile): number {
