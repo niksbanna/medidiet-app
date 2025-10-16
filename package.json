@@ -151,5 +151,6 @@
     "react-dev-inspector": "^2.0.1",
     "typescript": "~5.8.3"
   },
-  "private": true
+  "private": true,
+  "license": "Apache-2.0"
 }
