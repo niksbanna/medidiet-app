@@ -22,19 +22,9 @@ First off, thank you for considering contributing to MediDiet AI! It's people li
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by our commitment to providing a welcoming and inspiring community for all. By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
+This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [support@medidiet.app](mailto:support@medidiet.app).
 
-**Expected Behavior:**
-- Be respectful and inclusive
-- Use welcoming and inclusive language
-- Be collaborative and open to feedback
-- Focus on what is best for the community
-- Show empathy towards other community members
-
-**Unacceptable Behavior:**
-- Harassment, trolling, or discriminatory comments
-- Publishing others' private information
-- Any conduct which could reasonably be considered inappropriate in a professional setting
+For the full Code of Conduct, please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ## What Should I Know Before I Get Started?
 

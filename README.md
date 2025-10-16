@@ -324,7 +324,9 @@ eas submit --platform android
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before getting started.
+
+### Quick Start
 
 1. **Fork the repository**
 2. **Create a feature branch**
@@ -348,6 +350,8 @@ Contributions are welcome! Please follow these steps:
 - Write meaningful commit messages
 - Add comments for complex logic
 - Test on both iOS and Android
+
+For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
