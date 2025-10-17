@@ -195,6 +195,10 @@
 
 ```
 medidiet-app/
+├── .github/                  # GitHub configuration
+│   └── workflows/           # GitHub Actions workflows
+│       ├── ai-pr-review.yml # AI code review automation
+│       └── README.md        # Workflow documentation
 ├── app/                      # App screens (Expo Router)
 │   ├── (tabs)/              # Tab navigation screens
 │   │   ├── index.tsx        # Dashboard screen
@@ -342,6 +346,16 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
    git push origin feature/amazing-feature
    ```
 5. **Open a Pull Request**
+
+### AI-Powered Code Review
+
+When you open a pull request, our AI code review bot (powered by Google Gemini) will automatically:
+- 🤖 Review your code changes
+- 💡 Provide constructive feedback
+- 🔍 Check for bugs, security issues, and best practices
+- 📝 Post a detailed review comment on your PR
+
+The AI reviewer focuses on React Native, TypeScript, Expo conventions, and medical app best practices. Use the feedback as suggestions to improve your code quality.
 
 ### Coding Standards
 
