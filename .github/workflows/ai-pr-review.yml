@@ -1,0 +1,183 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get PR diff
+        id: pr-diff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the PR number from the event
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          
+          # Fetch the diff
+          gh pr diff $PR_NUMBER > pr.diff
+          
+          # Check if diff is too large (>10000 lines)
+          DIFF_LINES=$(wc -l < pr.diff)
+          if [ "$DIFF_LINES" -gt 10000 ]; then
+            echo "Diff too large ($DIFF_LINES lines), truncating to first 10000 lines"
+            head -n 10000 pr.diff > pr_truncated.diff
+            mv pr_truncated.diff pr.diff
+          fi
+          
+          echo "Diff has $DIFF_LINES lines"
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Run AI Review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO_FULL_NAME: ${{ github.repository }}
+        run: |
+          # Create a Node.js script to call Gemini API
+          cat > review.js << 'EOF'
+          const https = require('https');
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          
+          const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+          const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+          const PR_NUMBER = process.env.PR_NUMBER;
+          const REPO_FULL_NAME = process.env.REPO_FULL_NAME;
+          
+          if (!GEMINI_API_KEY) {
+            console.log('⚠️  GEMINI_API_KEY not found. Skipping AI review.');
+            process.exit(0);
+          }
+          
+          // Read the diff file
+          const diff = fs.readFileSync('pr.diff', 'utf8');
+          
+          if (!diff || diff.trim().length === 0) {
+            console.log('No changes to review.');
+            process.exit(0);
+          }
+          
+          // Prepare the prompt for Gemini
+          const prompt = `You are an expert code reviewer for a React Native mobile application built with Expo and TypeScript. This is the MediDiet AI app - a health and nutrition management application.
+
+          Review the following pull request diff and provide constructive feedback. Focus on:
+          - Code quality and TypeScript best practices
+          - React Native and Expo conventions
+          - Potential bugs or issues
+          - Performance concerns
+          - Security vulnerabilities
+          - Medical/health data handling (this is a medical app)
+          - Accessibility issues
+          - UI/UX improvements
+          
+          Be concise and specific. Only mention issues that are important. If the code looks good, say so.
+          
+          Here's the diff:
+          
+          \`\`\`diff
+          ${diff}
+          \`\`\`
+          
+          Provide your review as a markdown comment that will be posted on the PR.`;
+          
+          // Call Gemini API
+          const data = JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          });
+          
+          const options = {
+            hostname: 'generativelanguage.googleapis.com',
+            path: `/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': data.length
+            }
+          };
+          
+          console.log('🤖 Calling Gemini API for code review...');
+          
+          const req = https.request(options, (res) => {
+            let responseData = '';
+            
+            res.on('data', (chunk) => {
+              responseData += chunk;
+            });
+            
+            res.on('end', () => {
+              if (res.statusCode !== 200) {
+                console.error('Gemini API error:', res.statusCode, responseData);
+                process.exit(1);
+              }
+              
+              try {
+                const response = JSON.parse(responseData);
+                const review = response.candidates[0].content.parts[0].text;
+                
+                console.log('✅ AI Review generated successfully');
+                console.log('Review:', review);
+                
+                // Post comment to PR using GitHub CLI
+                const commentBody = `## 🤖 AI Code Review\n\n${review}\n\n---\n*This review was generated by AI (Google Gemini). Please use your judgment when addressing feedback.*`;
+                
+                // Write comment to file
+                fs.writeFileSync('review_comment.txt', commentBody);
+                
+                // Post comment using gh CLI
+                try {
+                  execSync(`gh pr comment ${PR_NUMBER} --body-file review_comment.txt`, {
+                    stdio: 'inherit',
+                    env: { ...process.env, GH_TOKEN: GITHUB_TOKEN }
+                  });
+                  console.log('✅ Review posted to PR successfully');
+                } catch (error) {
+                  console.error('❌ Failed to post comment to PR:', error.message);
+                  process.exit(1);
+                }
+                
+              } catch (error) {
+                console.error('Error parsing Gemini response:', error);
+                process.exit(1);
+              }
+            });
+          });
+          
+          req.on('error', (error) => {
+            console.error('Error calling Gemini API:', error);
+            process.exit(1);
+          });
+          
+          req.write(data);
+          req.end();
+          EOF
+          
+          # Run the review script
+          node review.js
