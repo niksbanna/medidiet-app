@@ -20,10 +20,31 @@ const CONDITION_GUIDELINES = {
     sodium: { max: 2000, focus: 'fluid balance' },
     notes: ['Monitor protein intake', 'Limit phosphorus', 'Control fluid intake']
   },
-  thyroid: {
+  thyroid_disorder: {
     iodine: { focus: 'moderate intake' },
     selenium: { focus: 'brazil nuts, fish' },
     notes: ['Consistent meal timing', 'Adequate selenium', 'Monitor soy intake']
+  },
+  heart_disease: {
+    fat: { max: 30, focus: 'limit saturated fats' },
+    sodium: { max: 2000, focus: 'heart health' },
+    fiber: { min: 25, focus: 'cholesterol management' },
+    notes: ['Mediterranean diet pattern', 'Omega-3 fatty acids', 'Limit saturated fats']
+  },
+  celiac_disease: {
+    gluten: { max: 0, focus: 'strict avoidance' },
+    fiber: { min: 25, focus: 'from gluten-free sources' },
+    notes: ['No wheat, barley, rye', 'Avoid cross-contamination', 'Focus on naturally gluten-free foods']
+  },
+  ibs: {
+    fodmap: { focus: 'limit high FODMAP foods' },
+    fiber: { focus: 'soluble fiber as tolerated' },
+    notes: ['Identify trigger foods', 'Regular meal timing', 'Stay well hydrated']
+  },
+  pcos: {
+    carbs: { max: 150, focus: 'low glycemic index' },
+    protein: { min: 25, focus: 'percentage of calories' },
+    notes: ['Anti-inflammatory foods', 'Stabilize blood sugar', 'Limit processed foods']
   }
 };
 
@@ -105,7 +126,8 @@ export class AIDietService {
     console.log('[LOCAL AI] Generating fallback diet plan for:', profile.medicalCondition);
     
     const dailyCalories = this.calculateCalorieNeeds(profile);
-    const condition = profile.medicalCondition.toLowerCase().replace(/\s+/g, '_');
+    // The condition should already be in slug format from the onboarding process
+    const condition = profile.medicalCondition;
     const guidelines = CONDITION_GUIDELINES[condition as keyof typeof CONDITION_GUIDELINES] || {};
     
     const days: DayPlan[] = [];
