@@ -79,10 +79,8 @@ export default function MealPlanScreen() {
   setRefreshing(true);
   try {
     await generateNewPlan();
-    showToast('🔄 Plan refreshed successfully!');
   } catch (error) {
     console.error('[REFRESH] Failed to refresh plan:', error);
-    showErrorToast('Unable to refresh meal plan. Please try again.');
   } finally {
     setRefreshing(false);
   }
