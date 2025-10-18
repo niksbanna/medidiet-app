@@ -25,6 +25,9 @@ interface HealthContextType {
   // Progress tracking
   addHealthProgress: (progress: HealthProgress) => Promise<void>;
   getAdherenceRate: (days: number) => number;
+  
+  // Logout functionality
+  logout: () => Promise<void>;
 }
 
 export const HealthContext = createContext<HealthContextType | undefined>(undefined);
@@ -160,6 +163,27 @@ export function HealthProvider({ children }: { children: ReactNode }) {
     return Math.round(totalAdherence / recentProgress.length);
   };
 
+  const logout = async () => {
+    try {
+      // Clear all user-scoped data from state
+      setUserProfile(null);
+      setCurrentPlanState(null);
+      setMealLogs([]);
+      setHealthProgress([]);
+      
+      // Clear all user-scoped data from AsyncStorage
+      await Promise.all([
+        AsyncStorage.removeItem('userProfile'),
+        AsyncStorage.removeItem('currentPlan'),
+        AsyncStorage.removeItem('mealLogs'),
+        AsyncStorage.removeItem('healthProgress')
+      ]);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      throw error;
+    }
+  };
+
   const value: HealthContextType = {
     userProfile,
     currentPlan,
@@ -174,7 +198,8 @@ export function HealthProvider({ children }: { children: ReactNode }) {
     updateMealLog,
     deleteMealLog,
     addHealthProgress,
-    getAdherenceRate
+    getAdherenceRate,
+    logout
   };
 
   return (

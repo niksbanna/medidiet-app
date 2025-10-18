@@ -19,7 +19,7 @@ import { showSuccessToast, showWarningToast, showErrorToast } from '../../utils/
 import { mapConditionToSlug } from '../../utils/conditionMapper';
 
 export default function ProfileScreen() {
-  const { userProfile, updateUserProfile, clearUserProfile, currentPlan, mealLogs, getAdherenceRate } = useHealth();
+  const { userProfile, updateUserProfile, logout, currentPlan, mealLogs, getAdherenceRate } = useHealth();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editField, setEditField] = useState<string>('');
   const [editValue, setEditValue] = useState<string>('');
@@ -94,7 +94,7 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     try {
-      await clearUserProfile();
+      await logout();
       router.replace('/onboarding');
       showSuccessToast('Logged out successfully');
     } catch (error) {
