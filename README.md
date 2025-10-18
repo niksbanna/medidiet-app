@@ -22,7 +22,7 @@
 
 Your support helps us grow and improve this project. Stars motivate us to add new features and maintain the app.
 
-[⭐ **Star this repository**](https://github.com/niksbanna/medidiet-app/stargazers) to show your support!
+[⭐ **Star this repository**](https://github.com/niksbanna/medidiet-app) to show your support!
 
 </div>
 
@@ -472,7 +472,7 @@ For questions or issues:
 If you like this project and find it useful, please consider giving it a star! ⭐  
 It helps others discover MediDiet AI and motivates us to keep improving it.
 
-[![Star this repo](https://img.shields.io/github/stars/niksbanna/medidiet-app?style=social)](https://github.com/niksbanna/medidiet-app/stargazers)
+[![Star this repo](https://img.shields.io/github/stars/niksbanna/medidiet-app?style=social)](https://github.com/niksbanna/medidiet-app)
 
 ---
 
