@@ -6,10 +6,23 @@
 ![React Native](https://img.shields.io/badge/React_Native-0.79.3-61DAFB?style=for-the-badge&logo=react)
 ![Expo](https://img.shields.io/badge/Expo-~53.0.9-000020?style=for-the-badge&logo=expo)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178C6?style=for-the-badge&logo=typescript)
+[![GitHub stars](https://img.shields.io/github/stars/niksbanna/medidiet-app?style=for-the-badge&logo=github&color=yellow)](https://github.com/niksbanna/medidiet-app/stargazers)
 
 **AI-Powered Personalized Nutrition Management for Medical Conditions**
 
 [Features](#features) • [Installation](#installation) • [Usage](#usage) • [Tech Stack](#tech-stack) • [Contributing](#contributing)
+
+</div>
+
+---
+
+<div align="center">
+
+### ⭐ **If you find MediDiet AI helpful, please give it a star!** ⭐
+
+Your support helps us grow and improve this project. Stars motivate us to add new features and maintain the app.
+
+[⭐ **Star this repository**](https://github.com/niksbanna/medidiet-app/stargazers) to show your support!
 
 </div>
 
@@ -453,6 +466,15 @@ For questions or issues:
 ---
 
 <div align="center">
+
+### ⭐ Show Your Support!
+
+If you like this project and find it useful, please consider giving it a star! ⭐  
+It helps others discover MediDiet AI and motivates us to keep improving it.
+
+[![Star this repo](https://img.shields.io/github/stars/niksbanna/medidiet-app?style=social)](https://github.com/niksbanna/medidiet-app/stargazers)
+
+---
 
 **Made with ❤️ and 🤖 AI**
 
