@@ -76,10 +76,16 @@ export default function MealPlanScreen() {
   };
 
   const onRefresh = async () => {
-    setRefreshing(true);
+  setRefreshing(true);
+  try {
     await generateNewPlan();
+  } catch (error) {
+    console.error('[REFRESH] Failed to refresh plan:', error);
+  } finally {
     setRefreshing(false);
-  };
+  }
+};
+
 
   useEffect(() => {
     if (userProfile && !currentPlan) {
