@@ -6,7 +6,7 @@
 ![React Native](https://img.shields.io/badge/React_Native-0.79.3-61DAFB?style=for-the-badge&logo=react)
 ![Expo](https://img.shields.io/badge/Expo-~53.0.9-000020?style=for-the-badge&logo=expo)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178C6?style=for-the-badge&logo=typescript)
-[![GitHub stars](https://img.shields.io/github/stars/niksbanna/medidiet-app?style=for-the-badge&logo=github&color=yellow)](https://github.com/niksbanna/medidiet-app/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/niksbanna/medidiet-app?style=for-the-badge&logo=github&color=yellow)](https://github.com/niksbanna/medidiet-app)
 
 **AI-Powered Personalized Nutrition Management for Medical Conditions**
 
