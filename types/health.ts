@@ -32,6 +32,7 @@ export interface MealItem {
   portion: string;
   nutrients: NutrientInfo;
   medicalNotes?: string;
+  isFavorite?: boolean;
 }
 
 export interface DayPlan {
