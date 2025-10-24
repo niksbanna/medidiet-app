@@ -30,9 +30,11 @@ export class GeminiService {
     // Trim whitespace and remove any invisible characters
     effectiveApiKey = effectiveApiKey.trim().replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-    console.log('[GEMINI SERVICE] API Key length:', effectiveApiKey.length);
-    console.log('[GEMINI SERVICE] API Key first 8 chars:', effectiveApiKey.substring(0, 8));
-    console.log('[GEMINI SERVICE] API Key last 4 chars:', effectiveApiKey.substring(effectiveApiKey.length - 4));
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[GEMINI SERVICE] API Key length:', effectiveApiKey.length);
+      console.log('[GEMINI SERVICE] API Key first 8 chars:', effectiveApiKey.substring(0, 8));
+      console.log('[GEMINI SERVICE] API Key last 4 chars:', effectiveApiKey.substring(effectiveApiKey.length - 4));
+    }
 
     if (!this.validateApiKey(effectiveApiKey)) {
       throw new ApiKeyNotConfiguredError('AI API key not configured. Please add your Gemini API key in Settings.');
