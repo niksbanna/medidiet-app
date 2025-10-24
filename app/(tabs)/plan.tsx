@@ -13,12 +13,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useHealth } from "../../hooks/useHealth";
 import { AIDietService } from "../../services/aiDietService";
+import { ApiKeyNotConfiguredError, InvalidApiKeyError } from "../../services/errors";
 import { DayPlan, MealItem } from "../../types/health";
 import NutrientBar from "../../components/ui/NutrientBar";
 import MedicalDisclaimer from "../../components/ui/MedicalDisclaimer";
 import AILoader from "../../components/ui/AILoader";
-import { showToast, showErrorToast } from "../../utils/toast";
+import { showToast, showErrorToast, showWarningToast } from "../../utils/toast";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 export default function MealPlanScreen() {
   const {
@@ -77,10 +79,33 @@ export default function MealPlanScreen() {
       }
     } catch (error) {
       console.error("[MEAL PLAN] Generation failed:", error);
-      setApiStatus("offline");
-      showErrorToast(
-        "Unable to generate meal plan. Please check your internet connection and try again."
-      );
+
+      // Handle API key not configured error specifically
+      if (error instanceof ApiKeyNotConfiguredError) {
+        setApiStatus("offline");
+        showWarningToast(
+          "Gemini API key not configured. Please add your API key in Settings to enable AI-powered meal plans."
+        );
+        // Navigate to profile/settings after a delay
+        setTimeout(() => {
+          router.push("/(tabs)/profile");
+        }, 2500);
+      } else if (error instanceof InvalidApiKeyError) {
+        // Handle invalid API key error
+        setApiStatus("offline");
+        showErrorToast(
+          "Invalid Gemini API key. Please check and update your API key in Settings."
+        );
+        // Navigate to profile/settings after a delay
+        setTimeout(() => {
+          router.push("/(tabs)/profile");
+        }, 2500);
+      } else {
+        setApiStatus("offline");
+        showErrorToast(
+          "Unable to generate meal plan. Please check your internet connection and try again."
+        );
+      }
     } finally {
       setIsGenerating(false);
     }

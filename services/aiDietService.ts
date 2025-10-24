@@ -1,5 +1,6 @@
 import { UserProfile, DayPlan, WeeklyPlan, MealItem, NutrientInfo } from '../types/health';
 import { GeminiService } from './geminiService';
+import { ApiKeyNotConfiguredError } from './errors';
 
 // Medical condition dietary guidelines
 const CONDITION_GUIDELINES = {
@@ -114,8 +115,15 @@ export class AIDietService {
       console.log('[AI DIET SERVICE] Successfully generated plan via AI API');
       return aiPlan;
     } catch (error) {
+      // If API key is not configured, throw the error to let UI handle it
+      if (error instanceof ApiKeyNotConfiguredError) {
+        console.error('[AI DIET SERVICE] API key not configured');
+        throw error;
+      }
+
+      // For other errors (network issues, API failures, etc.), fallback to local generation
       console.warn('[AI DIET SERVICE] AI API failed, falling back to local generation:', error);
-      
+
       // Fallback to local generation
       return this.generateLocalWeeklyPlan(profile);
     }
@@ -188,7 +196,7 @@ export class AIDietService {
     };
   }
 
-  private static selectMeals(targetCalories: number, mealType: string, condition: string): MealItem[] {
+  private static selectMeals(targetCalories: number, _mealType: string, condition: string): MealItem[] {
     // Local meal selection logic - simple filtering based on condition
     const availableMeals = MEAL_DATABASE.filter(meal => {
       // Basic condition-based filtering

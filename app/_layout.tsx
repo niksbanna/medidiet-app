@@ -5,8 +5,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HealthProvider } from '../contexts/HealthContext';
+import { Platform } from 'react-native';
+import { setBackgroundColorAsync, setPositionAsync } from 'expo-navigation-bar';
 
 SplashScreen.preventAutoHideAsync();
+
+// Configure Android navigation bar for edge-to-edge
+if (Platform.OS === 'android') {
+  setPositionAsync('absolute');
+  setBackgroundColorAsync('transparent');
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({
