@@ -19,11 +19,13 @@ import { showSuccessToast, showWarningToast, showErrorToast } from '../../utils/
 import { mapConditionToSlug } from '../../utils/conditionMapper';
 
 export default function ProfileScreen() {
-  const { userProfile, updateUserProfile, logout, currentPlan, mealLogs, getAdherenceRate } = useHealth();
+  const { userProfile, updateUserProfile, logout, currentPlan, mealLogs, getAdherenceRate, updateGeminiApiKey } = useHealth();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editField, setEditField] = useState<string>('');
   const [editValue, setEditValue] = useState<string>('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState<string>('');
 
   if (!userProfile) {
     return (
@@ -99,6 +101,29 @@ export default function ProfileScreen() {
       showSuccessToast('Logged out successfully');
     } catch (error) {
       showErrorToast('Failed to logout');
+    }
+  };
+
+  const handleOpenApiKeyModal = () => {
+    setApiKeyInput(userProfile?.geminiApiKey || '');
+    setShowApiKeyModal(true);
+  };
+
+  const handleSaveApiKey = async () => {
+    const trimmedApiKey = apiKeyInput.trim();
+
+    if (!trimmedApiKey) {
+      showWarningToast('Please enter a valid API key');
+      return;
+    }
+
+    try {
+      // Save the trimmed API key
+      await updateGeminiApiKey(trimmedApiKey);
+      setShowApiKeyModal(false);
+      showSuccessToast('Gemini API key updated successfully!');
+    } catch (error) {
+      showErrorToast('Failed to update API key');
     }
   };
 
@@ -290,6 +315,34 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* Settings */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="settings" size={24} color="#0066CC" />
+            <Text style={styles.sectionTitle}>Settings</Text>
+          </View>
+
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={handleOpenApiKeyModal}
+            >
+              <View style={styles.infoLeft}>
+                <View style={styles.iconContainer}>
+                  <MaterialIcons name="key" size={20} color="#0066CC" />
+                </View>
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoLabel}>Gemini API Key</Text>
+                  <Text style={styles.infoValue}>
+                    {userProfile?.geminiApiKey ? '••••••••' + userProfile.geminiApiKey.slice(-4) : 'Not configured'}
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color="#CCC" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Actions */}
         <View style={styles.section}>
           <TouchableOpacity
@@ -380,6 +433,48 @@ export default function ProfileScreen() {
                 onPress={handleLogout}
               >
                 <Text style={styles.modalButtonSaveText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* API Key Modal */}
+      <Modal
+        visible={showApiKeyModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowApiKeyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <MaterialIcons name="key" size={48} color="#0066CC" />
+            <Text style={styles.modalTitle}>Gemini API Key</Text>
+            <Text style={styles.modalMessage}>
+              Enter your Gemini API key to enable AI-powered meal plans. Get your API key from Google AI Studio.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={apiKeyInput}
+              onChangeText={setApiKeyInput}
+              placeholder="Enter your Gemini API key"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowApiKeyModal(false)}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveApiKey}
+              >
+                <Text style={styles.modalButtonSaveText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -622,6 +717,12 @@ const styles = StyleSheet.create({
   },
   editButton: {
     padding: 8,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
   },
   insightCard: {
     padding: 0,

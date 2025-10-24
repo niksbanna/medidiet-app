@@ -1,7 +1,7 @@
 import { UserProfile, DayPlan, WeeklyPlan, MealItem, NutrientInfo } from '../types/health';
+import { ApiKeyNotConfiguredError, InvalidApiKeyError, ApiRequestError } from './errors';
 
 // AI API configuration
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 
 interface GeminiResponse {
@@ -15,28 +15,49 @@ interface GeminiResponse {
 }
 
 export class GeminiService {
-  private static validateApiKey(): boolean {
-    if (!GEMINI_API_KEY) {
-      console.warn('AI API key not found. Please add EXPO_PUBLIC_GEMINI_API_KEY to your environment variables.');
+  private static validateApiKey(apiKey: string | null): boolean {
+    if (!apiKey || apiKey.trim() === '') {
+      console.warn('AI API key not found. Please add your Gemini API key in the app settings.');
       return false;
     }
     return true;
   }
 
-  static async generateDietPlan(userProfile: UserProfile): Promise<WeeklyPlan> {
-    if (!this.validateApiKey()) {
-      throw new Error('AI API key not configured');
+  static async generateDietPlan(userProfile: UserProfile, apiKey: string | null = null): Promise<WeeklyPlan> {
+    // Use provided API key or fall back to user profile or environment variable
+    let effectiveApiKey = apiKey || userProfile.geminiApiKey || '';
+
+    // Trim whitespace and remove any invisible characters
+    effectiveApiKey = effectiveApiKey.trim().replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[GEMINI SERVICE] API Key length:', effectiveApiKey.length);
+      console.log('[GEMINI SERVICE] API Key first 8 chars:', effectiveApiKey.substring(0, 8));
+      console.log('[GEMINI SERVICE] API Key last 4 chars:', effectiveApiKey.substring(effectiveApiKey.length - 4));
+    }
+
+    if (!this.validateApiKey(effectiveApiKey)) {
+      throw new ApiKeyNotConfiguredError('AI API key not configured. Please add your Gemini API key in Settings.');
     }
 
     try {
       const prompt = this.createMedicalDietPrompt(userProfile);
-      const response = await this.callGeminiAPI(prompt);
+      const response = await this.callGeminiAPI(prompt, effectiveApiKey);
       const parsedPlan = this.parseDietPlanResponse(response, userProfile);
-      
+
       return parsedPlan;
     } catch (error) {
       console.error('AI API Error:', error);
-      throw new Error('Failed to generate diet plan. Please try again.');
+      // Re-throw ApiKeyNotConfiguredError as-is
+      if (error instanceof ApiKeyNotConfiguredError) {
+        throw error;
+      }
+      // Re-throw InvalidApiKeyError as-is
+      if (error instanceof InvalidApiKeyError) {
+        throw error;
+      }
+      // Wrap other errors in ApiRequestError
+      throw new ApiRequestError('Failed to generate diet plan. Please try again.');
     }
   }
 
@@ -193,7 +214,7 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
     return multipliers[activityLevel] || 1.55;
   }
 
-  private static async callGeminiAPI(prompt: string): Promise<string> {
+  private static async callGeminiAPI(prompt: string, apiKey: string): Promise<string> {
     const requestBody = {
       contents: [{
         parts: [{
@@ -212,7 +233,7 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
           threshold: "BLOCK_MEDIUM_AND_ABOVE"
         },
         {
-          category: "HARM_CATEGORY_HATE_SPEECH", 
+          category: "HARM_CATEGORY_HATE_SPEECH",
           threshold: "BLOCK_MEDIUM_AND_ABOVE"
         },
         {
@@ -226,7 +247,13 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
       ]
     };
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    // URL encode the API key to handle special characters
+    const encodedApiKey = encodeURIComponent(apiKey);
+
+    console.log('[GEMINI SERVICE] Making API request...');
+    console.log('[GEMINI SERVICE] API URL:', GEMINI_API_URL);
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${encodedApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -237,13 +264,24 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       console.error('AI API Error:', response.status, errorData);
-      throw new Error(`API request failed: ${response.status}`);
+
+      // Check for invalid API key (400 or 403 status codes)
+      if (response.status === 400 || response.status === 403) {
+        const errorMessage = errorData?.error?.message || '';
+        if (errorMessage.toLowerCase().includes('api key') ||
+            errorMessage.toLowerCase().includes('invalid') ||
+            errorMessage.toLowerCase().includes('not valid')) {
+          throw new InvalidApiKeyError('Invalid API key. Please check your Gemini API key in Settings.');
+        }
+      }
+
+      throw new ApiRequestError(`API request failed: ${response.status}`);
     }
 
     const data: GeminiResponse = await response.json();
-    
+
     if (!data.candidates || data.candidates.length === 0) {
-      throw new Error('No response generated from AI API');
+      throw new ApiRequestError('No response generated from AI API');
     }
 
     return data.candidates[0].content.parts[0].text;

@@ -33,6 +33,10 @@ interface HealthContextType {
   addHealthProgress: (progress: HealthProgress) => Promise<void>;
   getAdherenceRate: (days: number) => number;
 
+  // API key management
+  updateGeminiApiKey: (apiKey: string) => Promise<void>;
+  getGeminiApiKey: () => string | null;
+
   // Logout functionality
   logout: () => Promise<void>;
 }
@@ -217,6 +221,21 @@ export function HealthProvider({ children }: { children: ReactNode }) {
     return Math.round(totalAdherence / recentProgress.length);
   };
 
+  const updateGeminiApiKey = async (apiKey: string) => {
+    try {
+      if (!userProfile) return;
+      const updatedProfile = { ...userProfile, geminiApiKey: apiKey, updatedAt: new Date() };
+      await updateUserProfile(updatedProfile);
+    } catch (error) {
+      console.error("Error updating Gemini API key:", error);
+      throw error;
+    }
+  };
+
+  const getGeminiApiKey = (): string | null => {
+    return userProfile?.geminiApiKey || null;
+  };
+
   const logout = async () => {
     try {
       // Clear all user-scoped data from state
@@ -257,6 +276,8 @@ export function HealthProvider({ children }: { children: ReactNode }) {
     addHealthProgress,
     getAdherenceRate,
     toggleFavoriteMeal,
+    updateGeminiApiKey,
+    getGeminiApiKey,
     logout,
   };
 

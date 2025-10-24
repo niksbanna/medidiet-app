@@ -18,13 +18,13 @@ export default function TabLayout() {
           borderTopWidth: 1,
           height: Platform.select({
             ios: insets.bottom + 60,
-            android: 60,
+            android: insets.bottom + 60,
             default: 60
           }),
           paddingTop: 8,
           paddingBottom: Platform.select({
             ios: insets.bottom + 8,
-            android: 8,
+            android: insets.bottom + 8,
             default: 8
           }),
           paddingHorizontal: 16,

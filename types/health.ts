@@ -10,6 +10,7 @@ export interface UserProfile {
   allergies: string[];
   dietaryRestrictions: string[];
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  geminiApiKey?: string; // User's Gemini API key
   createdAt: Date;
   updatedAt: Date;
 }
