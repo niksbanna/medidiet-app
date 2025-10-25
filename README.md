@@ -107,22 +107,9 @@ Your support helps us grow and improve this project. Stars motivate us to add ne
 
 3. **Set up Gemini API key (Optional)**
 
-   You have two options to configure your Gemini API key:
-
-   **Option 1: In-App Configuration (Recommended)**
    - Skip this step during setup
    - After launching the app, go to Profile → Settings → Gemini API Key
    - Enter your API key directly in the app
-
-   **Option 2: Environment Variable**
-   - Create a `.env` file in the root directory:
-     ```env
-     EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
-     ```
-
-   > **Note**: Get your free Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   >
-   > The in-app configuration is preferred as it allows each user to use their own API key without sharing credentials
 
 4. **Start the development server**
    ```bash
@@ -294,27 +281,10 @@ medidiet-app/
 
 ### Gemini API Key
 
-You can configure your Gemini API key in two ways:
-
-**1. In-App Settings (Recommended)**
 - Navigate to Profile tab
 - Tap on Settings → Gemini API Key
 - Enter your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - The key is securely stored in your device's local storage
-
-**2. Environment Variable (Optional)**
-Create a `.env` file with the following:
-
-```env
-# Optional - For development or shared environments
-EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
-
-# Optional (for future features)
-# EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-# EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-> **Note**: The in-app configuration takes priority over environment variables. This allows each user to use their own API key securely without sharing credentials.
 
 ---
 
