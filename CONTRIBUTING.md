@@ -415,7 +415,7 @@ When working with health-related features:
 - [ ] TypeScript types are properly defined
 - [ ] Code has been tested on iOS and/or Android
 - [ ] Linter passes (`pnpm lint`)
-- [ ] Type check passes (`npx tsc --noEmit`)
+- [ ] Type check passes (`pnpm typecheck`)
 - [ ] Commit messages follow conventions
 - [ ] Documentation updated (if needed)
 - [ ] Medical disclaimers included (if applicable)
@@ -455,8 +455,8 @@ Describe the tests you ran:
 - [ ] Tested on Android
 - [ ] Tested with medical condition: [specify]
 - [ ] Tested offline fallback
-- [ ] Linter passed
-- [ ] Type checking passed
+- [ ] Linter passed (`pnpm lint`)
+- [ ] Type checking passed (`pnpm typecheck`)
 
 ## Screenshots (if applicable)
 [Add screenshots here]
