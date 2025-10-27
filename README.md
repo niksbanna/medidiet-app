@@ -83,7 +83,7 @@ Your support helps us grow and improve this project. Stars motivate us to add ne
 ### Prerequisites
 
 - **Node.js**: v18 or higher
-- **pnpm**: v8 or higher (or npm/yarn)
+- **pnpm**: v8 or higher
 - **Expo CLI**: Latest version
 - **iOS Simulator** (Mac only) or **Android Studio** (for emulator)
 - **Physical Device**: iOS or Android smartphone (optional)
@@ -99,10 +99,6 @@ Your support helps us grow and improve this project. Stars motivate us to add ne
 2. **Install dependencies**
    ```bash
    pnpm install
-   # or
-   npm install
-   # or
-   yarn install
    ```
 
 3. **Set up Gemini API key (Optional)**
@@ -127,8 +123,6 @@ Your support helps us grow and improve this project. Stars motivate us to add ne
 4. **Start the development server**
    ```bash
    pnpm start
-   # or
-   npm start
    ```
 
 5. **Run on your device**
