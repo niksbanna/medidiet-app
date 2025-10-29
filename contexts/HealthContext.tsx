@@ -36,6 +36,10 @@ interface HealthContextType {
   // API key management
   updateGeminiApiKey: (apiKey: string) => Promise<void>;
   getGeminiApiKey: () => string | null;
+  updateOpenAIApiKey: (apiKey: string) => Promise<void>;
+  getOpenAIApiKey: () => string | null;
+  updatePreferredAiProvider: (provider: 'gemini' | 'openai') => Promise<void>;
+  getPreferredAiProvider: () => 'gemini' | 'openai' | undefined;
 
   // Logout functionality
   logout: () => Promise<void>;
@@ -232,8 +236,46 @@ export function HealthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateOpenAIApiKey = async (apiKey: string) => {
+    try {
+      if (!userProfile) return;
+      const updatedProfile = { 
+        ...userProfile, 
+        openAIApiKey: apiKey, 
+        updatedAt: new Date() 
+      };
+      await updateUserProfile(updatedProfile);
+    } catch (error) {
+      console.error("Error updating OpenAI API key:", error);
+      throw error;
+    }
+  };
+
+  const updatePreferredAiProvider = async (provider: 'gemini' | 'openai') => {
+    try {
+      if (!userProfile) return;
+      const updatedProfile = { 
+        ...userProfile, 
+        preferredAiProvider: provider, 
+        updatedAt: new Date() 
+      };
+      await updateUserProfile(updatedProfile);
+    } catch (error) {
+      console.error("Error updating preferred AI provider:", error);
+      throw error;
+    }
+  };
+
   const getGeminiApiKey = (): string | null => {
     return userProfile?.geminiApiKey || null;
+  };
+
+  const getOpenAIApiKey = (): string | null => {
+    return userProfile?.openAIApiKey || null;
+  };
+
+  const getPreferredAiProvider = (): 'gemini' | 'openai' | undefined => {
+    return userProfile?.preferredAiProvider;
   };
 
   const logout = async () => {
@@ -278,6 +320,10 @@ export function HealthProvider({ children }: { children: ReactNode }) {
     toggleFavoriteMeal,
     updateGeminiApiKey,
     getGeminiApiKey,
+    updateOpenAIApiKey,
+    getOpenAIApiKey,
+    updatePreferredAiProvider,
+    getPreferredAiProvider,
     logout,
   };
 

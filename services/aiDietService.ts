@@ -1,5 +1,6 @@
 import { UserProfile, DayPlan, WeeklyPlan, MealItem, NutrientInfo } from '../types/health';
 import { GeminiService } from './geminiService';
+import { OpenAIService } from './openAIService';
 import { ApiKeyNotConfiguredError } from './errors';
 
 // Medical condition dietary guidelines
@@ -109,10 +110,24 @@ export class AIDietService {
   // Generate personalized meal plan using AI with fallback
   static async generateWeeklyPlan(profile: UserProfile): Promise<WeeklyPlan> {
     try {
-      // Try AI API first
-      console.log('[AI DIET SERVICE] Attempting AI API generation...');
+      // Determine which AI provider to use
+      const providerFromProfile = (profile as any).preferredAiProvider as string | undefined;
+      const envProvider = process.env.EXPO_PUBLIC_AI_PROVIDER || process.env.AI_PROVIDER;
+      const provider = (providerFromProfile || envProvider || 'gemini').toLowerCase();
+
+      console.log('[AI DIET SERVICE] Attempting AI API generation using provider:', provider);
+
+      if (provider === 'openai') {
+        // pick API key from profile or environment
+        const apiKey = (profile as any).openAIApiKey || process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY || null;
+        const aiPlan = await OpenAIService.generateDietPlan(profile, apiKey);
+        console.log('[AI DIET SERVICE] Successfully generated plan via OpenAI API');
+        return aiPlan;
+      }
+
+      // Default to Gemini
       const aiPlan = await GeminiService.generateDietPlan(profile);
-      console.log('[AI DIET SERVICE] Successfully generated plan via AI API');
+      console.log('[AI DIET SERVICE] Successfully generated plan via Gemini API');
       return aiPlan;
     } catch (error) {
       // If API key is not configured, throw the error to let UI handle it
