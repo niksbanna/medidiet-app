@@ -11,6 +11,8 @@ export interface UserProfile {
   dietaryRestrictions: string[];
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   geminiApiKey?: string; // User's Gemini API key
+  openAIApiKey?: string; // Optional: User's OpenAI API key
+  preferredAiProvider?: 'gemini' | 'openai'; // Optional preference for which AI provider to use
   createdAt: Date;
   updatedAt: Date;
 }

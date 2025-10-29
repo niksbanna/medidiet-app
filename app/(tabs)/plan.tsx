@@ -84,7 +84,7 @@ export default function MealPlanScreen() {
       if (error instanceof ApiKeyNotConfiguredError) {
         setApiStatus("offline");
         showWarningToast(
-          "Gemini API key not configured. Please add your API key in Settings to enable AI-powered meal plans."
+          "AI API key not configured. Please add your API key in Settings to enable AI-powered meal plans."
         );
         // Navigate to profile/settings after a delay
         setTimeout(() => {
@@ -94,7 +94,7 @@ export default function MealPlanScreen() {
         // Handle invalid API key error
         setApiStatus("offline");
         showErrorToast(
-          "Invalid Gemini API key. Please check and update your API key in Settings."
+          "Invalid AI API key. Please check and update your API key in Settings."
         );
         // Navigate to profile/settings after a delay
         setTimeout(() => {

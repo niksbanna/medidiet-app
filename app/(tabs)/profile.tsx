@@ -19,13 +19,28 @@ import { showSuccessToast, showWarningToast, showErrorToast } from '../../utils/
 import { mapConditionToSlug } from '../../utils/conditionMapper';
 
 export default function ProfileScreen() {
-  const { userProfile, updateUserProfile, logout, currentPlan, mealLogs, getAdherenceRate, updateGeminiApiKey } = useHealth();
+  const { 
+    userProfile, 
+    updateUserProfile, 
+    logout, 
+    currentPlan, 
+    mealLogs, 
+    getAdherenceRate, 
+    updateGeminiApiKey,
+    updateOpenAIApiKey,
+    updatePreferredAiProvider,
+  } = useHealth();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editField, setEditField] = useState<string>('');
   const [editValue, setEditValue] = useState<string>('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState<string>('');
+  const [showOpenAIKeyModal, setShowOpenAIKeyModal] = useState(false);
+  const [currentApiProvider, setCurrentApiProvider] = useState<'gemini' | 'openai'>(
+    userProfile?.preferredAiProvider || 'gemini'
+  );
+  const [geminiKeyInput, setGeminiKeyInput] = useState<string>('');
+  const [openAIKeyInput, setOpenAIKeyInput] = useState<string>('');
 
   if (!userProfile) {
     return (
@@ -104,13 +119,18 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleOpenApiKeyModal = () => {
-    setApiKeyInput(userProfile?.geminiApiKey || '');
+  const handleOpenGeminiKeyModal = () => {
+    setGeminiKeyInput(userProfile?.geminiApiKey || '');
     setShowApiKeyModal(true);
   };
 
-  const handleSaveApiKey = async () => {
-    const trimmedApiKey = apiKeyInput.trim();
+  const handleOpenOpenAIKeyModal = () => {
+    setOpenAIKeyInput(userProfile?.openAIApiKey || '');
+    setShowOpenAIKeyModal(true);
+  };
+
+  const handleSaveGeminiKey = async () => {
+    const trimmedApiKey = geminiKeyInput.trim();
 
     if (!trimmedApiKey) {
       showWarningToast('Please enter a valid API key');
@@ -118,12 +138,38 @@ export default function ProfileScreen() {
     }
 
     try {
-      // Save the trimmed API key
       await updateGeminiApiKey(trimmedApiKey);
       setShowApiKeyModal(false);
       showSuccessToast('Gemini API key updated successfully!');
     } catch (error) {
       showErrorToast('Failed to update API key');
+    }
+  };
+
+  const handleSaveOpenAIKey = async () => {
+    const trimmedApiKey = openAIKeyInput.trim();
+
+    if (!trimmedApiKey) {
+      showWarningToast('Please enter a valid API key');
+      return;
+    }
+
+    try {
+      await updateOpenAIApiKey(trimmedApiKey);
+      setShowOpenAIKeyModal(false);
+      showSuccessToast('OpenAI API key updated successfully!');
+    } catch (error) {
+      showErrorToast('Failed to update API key');
+    }
+  };
+  
+  const handleChangeProvider = async (provider: 'gemini' | 'openai') => {
+    try {
+      await updatePreferredAiProvider(provider);
+      setCurrentApiProvider(provider);
+      showSuccessToast(`Switched to ${provider.toUpperCase()} as the AI provider`);
+    } catch (error) {
+      showErrorToast('Failed to update AI provider');
     }
   };
 
@@ -323,23 +369,93 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={handleOpenApiKeyModal}
-            >
-              <View style={styles.infoLeft}>
-                <View style={styles.iconContainer}>
-                  <MaterialIcons name="key" size={20} color="#0066CC" />
-                </View>
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Gemini API Key</Text>
-                  <Text style={styles.infoValue}>
-                    {userProfile?.geminiApiKey ? '••••••••' + userProfile.geminiApiKey.slice(-4) : 'Not configured'}
-                  </Text>
-                </View>
+            <View style={styles.settingsGroup}>
+              <Text style={styles.settingsGroupLabel}>AI Provider</Text>
+              <View style={styles.providerSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.providerButton,
+                    currentApiProvider === 'gemini' && styles.providerButtonSelected
+                  ]}
+                  onPress={() => handleChangeProvider('gemini')}
+                >
+                  <MaterialIcons 
+                    name="psychology" 
+                    size={20} 
+                    color={currentApiProvider === 'gemini' ? '#FFFFFF' : '#0066CC'} 
+                  />
+                  <Text style={[
+                    styles.providerButtonText,
+                    currentApiProvider === 'gemini' && styles.providerButtonTextSelected
+                  ]}>Gemini</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.providerButton,
+                    currentApiProvider === 'openai' && styles.providerButtonSelected
+                  ]}
+                  onPress={() => handleChangeProvider('openai')}
+                >
+                  <MaterialIcons 
+                    name="token" 
+                    size={20} 
+                    color={currentApiProvider === 'openai' ? '#FFFFFF' : '#0066CC'} 
+                  />
+                  <Text style={[
+                    styles.providerButtonText,
+                    currentApiProvider === 'openai' && styles.providerButtonTextSelected
+                  ]}>OpenAI</Text>
+                </TouchableOpacity>
               </View>
-              <MaterialIcons name="chevron-right" size={24} color="#CCC" />
-            </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.settingRow}
+                onPress={handleOpenGeminiKeyModal}
+              >
+                <View style={styles.infoLeft}>
+                  <View style={[
+                    styles.iconContainer,
+                    currentApiProvider !== 'gemini' && styles.iconContainerInactive
+                  ]}>
+                    <MaterialIcons name="key" size={20} color="#0066CC" />
+                  </View>
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoLabel}>Gemini API Key</Text>
+                    <Text style={[
+                      styles.infoValue,
+                      currentApiProvider !== 'gemini' && styles.infoValueInactive
+                    ]}>
+                      {userProfile?.geminiApiKey ? '••••••••' + userProfile.geminiApiKey.slice(-4) : 'Not configured'}
+                    </Text>
+                  </View>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color="#CCC" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.settingRow}
+                onPress={handleOpenOpenAIKeyModal}
+              >
+                <View style={styles.infoLeft}>
+                  <View style={[
+                    styles.iconContainer,
+                    currentApiProvider !== 'openai' && styles.iconContainerInactive
+                  ]}>
+                    <MaterialIcons name="vpn-key" size={20} color="#0066CC" />
+                  </View>
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoLabel}>OpenAI API Key</Text>
+                    <Text style={[
+                      styles.infoValue,
+                      currentApiProvider !== 'openai' && styles.infoValueInactive
+                    ]}>
+                      {userProfile?.openAIApiKey ? '••••••••' + userProfile.openAIApiKey.slice(-4) : 'Not configured'}
+                    </Text>
+                  </View>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color="#CCC" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -439,7 +555,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* API Key Modal */}
+      {/* Gemini API Key Modal */}
       <Modal
         visible={showApiKeyModal}
         transparent
@@ -448,15 +564,15 @@ export default function ProfileScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <MaterialIcons name="key" size={48} color="#0066CC" />
+            <MaterialIcons name="psychology" size={48} color="#0066CC" />
             <Text style={styles.modalTitle}>Gemini API Key</Text>
             <Text style={styles.modalMessage}>
               Enter your Gemini API key to enable AI-powered meal plans. Get your API key from Google AI Studio.
             </Text>
             <TextInput
               style={styles.modalInput}
-              value={apiKeyInput}
-              onChangeText={setApiKeyInput}
+              value={geminiKeyInput}
+              onChangeText={setGeminiKeyInput}
               placeholder="Enter your Gemini API key"
               secureTextEntry
               autoCapitalize="none"
@@ -472,7 +588,49 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonSave]}
-                onPress={handleSaveApiKey}
+                onPress={handleSaveGeminiKey}
+              >
+                <Text style={styles.modalButtonSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* OpenAI API Key Modal */}
+      <Modal
+        visible={showOpenAIKeyModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOpenAIKeyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <MaterialIcons name="token" size={48} color="#0066CC" />
+            <Text style={styles.modalTitle}>OpenAI API Key</Text>
+            <Text style={styles.modalMessage}>
+              Enter your OpenAI API key to enable AI-powered meal plans. Get your API key from OpenAI's platform.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={openAIKeyInput}
+              onChangeText={setOpenAIKeyInput}
+              placeholder="Enter your OpenAI API key"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowOpenAIKeyModal(false)}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveOpenAIKey}
               >
                 <Text style={styles.modalButtonSaveText}>Save</Text>
               </TouchableOpacity>
@@ -718,11 +876,54 @@ const styles = StyleSheet.create({
   editButton: {
     padding: 8,
   },
+  settingsGroup: {
+    marginBottom: 16,
+  },
+  settingsGroupLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  providerSelector: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+    gap: 12,
+  },
+  providerButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#E6F3FF',
+    gap: 8,
+  },
+  providerButtonSelected: {
+    backgroundColor: '#0066CC',
+  },
+  providerButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0066CC',
+  },
+  providerButtonTextSelected: {
+    color: '#FFFFFF',
+  },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
+  },
+  iconContainerInactive: {
+    opacity: 0.5,
+  },
+  infoValueInactive: {
+    opacity: 0.5,
   },
   insightCard: {
     padding: 0,

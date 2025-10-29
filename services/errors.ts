@@ -1,7 +1,7 @@
 // Custom error classes for the application
 
 export class ApiKeyNotConfiguredError extends Error {
-  constructor(message: string = 'AI API key not configured. Please add your Gemini API key in Settings.') {
+  constructor(message: string = 'AI API key not configured. Please add your AI API key in Settings.') {
     super(message);
     this.name = 'ApiKeyNotConfiguredError';
 
@@ -13,7 +13,7 @@ export class ApiKeyNotConfiguredError extends Error {
 }
 
 export class InvalidApiKeyError extends Error {
-  constructor(message: string = 'Invalid API key. Please check your Gemini API key in Settings.') {
+  constructor(message: string = 'Invalid API key. Please check your AI API key in Settings.') {
     super(message);
     this.name = 'InvalidApiKeyError';
 
