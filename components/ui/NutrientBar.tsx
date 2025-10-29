@@ -18,28 +18,37 @@ export default function NutrientBar({
   color, 
   warning = false 
 }: NutrientBarProps) {
-  const percentage = Math.min((current / target) * 100, 100);
-  const isOver = current > target;
+  const hasTarget = target > 0;
+  const percentage = hasTarget ? Math.min((current / target) * 100, 100) : 0;
+  const isOver = hasTarget && current > target;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.label, warning && styles.warningText]}>{label}</Text>
-        <Text style={[styles.values, warning && styles.warningText]}>
-          {Math.round(current)}/{Math.round(target)} {unit}
-        </Text>
+        {hasTarget ? (
+          <Text style={[styles.values, warning && styles.warningText]}>
+            {Math.round(current)}/{Math.round(target)} {unit}
+          </Text>
+        ) : (
+          <Text style={styles.values}>Target not set</Text>
+        )}
       </View>
       
       <View style={styles.barContainer}>
-        <View 
-          style={[
-            styles.bar, 
-            { 
-              width: `${percentage}%`, 
-              backgroundColor: warning || isOver ? '#FF6B6B' : color 
-            }
-          ]} 
-        />
+        {hasTarget ? (
+          <View 
+            style={[
+              styles.bar, 
+              { 
+                width: `${percentage}%`, 
+                backgroundColor: warning || isOver ? '#FF6B6B' : color 
+              }
+            ]} 
+          />
+        ) : (
+          <View style={[styles.bar, { width: '0%' }]} />
+        )}
       </View>
       
       {isOver && (
