@@ -86,6 +86,11 @@ const MEAL_DATABASE: MealItem[] = [
 
 export class AIDietService {
   // Calculate daily caloric needs using Mifflin-St Jeor equation
+  static async regenerateMeal(currentMeal: MealItem, userProfile: UserProfile, mealType: string): Promise<MealItem> {
+    // Delegate to GeminiService for regeneration
+    return GeminiService.regenerateMeal(currentMeal, userProfile, mealType);
+  }
+
   static calculateCalorieNeeds(profile: UserProfile): number {
     const { age, gender, height, weight, activityLevel } = profile;
     
@@ -146,12 +151,19 @@ export class AIDietService {
 
   // Local fallback meal plan generation
   private static async generateLocalWeeklyPlan(profile: UserProfile): Promise<WeeklyPlan> {
-    console.log('[LOCAL AI] Generating fallback diet plan for:', profile.medicalCondition);
+    console.log('[LOCAL AI] Generating fallback diet plan for:', profile.medicalConditions.join(', '));
     
     const dailyCalories = this.calculateCalorieNeeds(profile);
-    // The condition should already be in slug format from the onboarding process
-    const condition = profile.medicalCondition;
-    const guidelines = CONDITION_GUIDELINES[condition as keyof typeof CONDITION_GUIDELINES] || {};
+    const conditions = profile.medicalConditions;
+    
+    // Merge guidelines from all conditions
+    let mergedGuidelines: any = { notes: [] };
+    conditions.forEach(condition => {
+      const guidelines = CONDITION_GUIDELINES[condition as keyof typeof CONDITION_GUIDELINES] || {};
+      if (guidelines.notes) {
+        mergedGuidelines.notes = [...mergedGuidelines.notes, ...guidelines.notes];
+      }
+    });
     
     const days: DayPlan[] = [];
     
@@ -162,8 +174,8 @@ export class AIDietService {
       const dayPlan = this.generateDayPlan(
         date.toISOString().split('T')[0],
         dailyCalories,
-        condition,
-        guidelines
+        conditions,
+        mergedGuidelines
       );
       
       days.push(dayPlan);
@@ -173,7 +185,7 @@ export class AIDietService {
       id: `local_plan_${Date.now()}`,
       weekOf: new Date().toISOString().split('T')[0],
       days,
-      condition: profile.medicalCondition,
+      condition: profile.medicalConditions.join(', '),
       generatedAt: new Date()
     };
   }
@@ -181,14 +193,14 @@ export class AIDietService {
   private static generateDayPlan(
     date: string, 
     targetCalories: number, 
-    condition: string,
+    conditions: string[],
     guidelines: any
   ): DayPlan {
     // Distribute calories across meals (breakfast: 25%, lunch: 35%, dinner: 30%, snacks: 10%)
-    const breakfast = this.selectMeals(targetCalories * 0.25, 'breakfast', condition);
-    const lunch = this.selectMeals(targetCalories * 0.35, 'lunch', condition);
-    const dinner = this.selectMeals(targetCalories * 0.30, 'dinner', condition);
-    const snacks = this.selectMeals(targetCalories * 0.10, 'snack', condition);
+    const breakfast = this.selectMeals(targetCalories * 0.25, 'breakfast', conditions);
+    const lunch = this.selectMeals(targetCalories * 0.35, 'lunch', conditions);
+    const dinner = this.selectMeals(targetCalories * 0.30, 'dinner', conditions);
+    const snacks = this.selectMeals(targetCalories * 0.10, 'snack', conditions);
 
     const totalNutrients = this.calculateTotalNutrients([
       ...breakfast, ...lunch, ...dinner, ...snacks
@@ -211,12 +223,14 @@ export class AIDietService {
     };
   }
 
-  private static selectMeals(targetCalories: number, _mealType: string, condition: string): MealItem[] {
-    // Local meal selection logic - simple filtering based on condition
+  private static selectMeals(targetCalories: number, _mealType: string, conditions: string[]): MealItem[] {
+    // Local meal selection logic - simple filtering based on conditions
     const availableMeals = MEAL_DATABASE.filter(meal => {
-      // Basic condition-based filtering
-      if (condition === 'hypertension' && meal.nutrients.sodium > 300) return false;
-      if (condition === 'diabetes' && meal.nutrients.carbs > 30) return false;
+      // Basic condition-based filtering - check against ALL conditions
+      for (const condition of conditions) {
+        if (condition === 'hypertension' && meal.nutrients.sodium > 300) return false;
+        if (condition === 'diabetes' && meal.nutrients.carbs > 30) return false;
+      }
       return true;
     });
 
@@ -228,7 +242,7 @@ export class AIDietService {
       if (currentCalories + meal.nutrients.calories <= targetCalories + 50) {
         selectedMeals.push({
           ...meal,
-          medicalNotes: this.getMedicalNotes(meal, condition)
+          medicalNotes: this.getMedicalNotes(meal, conditions)
         });
         currentCalories += meal.nutrients.calories;
         
@@ -239,20 +253,23 @@ export class AIDietService {
     return selectedMeals;
   }
 
-  private static getMedicalNotes(meal: MealItem, condition: string): string {
+  private static getMedicalNotes(meal: MealItem, conditions: string[]): string {
     const notes: string[] = [];
     
-    if (condition === 'diabetes' && meal.nutrients.fiber >= 5) {
-      notes.push('High fiber - helps blood sugar control');
-    }
-    if (condition === 'hypertension' && meal.nutrients.potassium >= 300) {
-      notes.push('Potassium-rich - supports heart health');
-    }
-    if (condition === 'kidney_disease' && meal.nutrients.protein <= 10) {
-      notes.push('Moderate protein - kidney-friendly');
+    for (const condition of conditions) {
+      if (condition === 'diabetes' && meal.nutrients.fiber >= 5) {
+        notes.push('High fiber - helps blood sugar control');
+      }
+      if (condition === 'hypertension' && meal.nutrients.potassium >= 300) {
+        notes.push('Potassium-rich - supports heart health');
+      }
+      if (condition === 'kidney_disease' && meal.nutrients.protein <= 10) {
+        notes.push('Moderate protein - kidney-friendly');
+      }
     }
 
-    return notes.join(' • ');
+    // Remove duplicates and join
+    return [...new Set(notes)].join(' • ');
   }
 
   private static calculateTotalNutrients(meals: MealItem[]): NutrientInfo {

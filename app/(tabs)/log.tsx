@@ -487,8 +487,8 @@ export default function MealLogScreen() {
                 />
                 <View style={styles.medicalNoteContent}>
                   <Text style={styles.medicalNoteTitle}>
-                    Tracking for {userProfile.medicalCondition}
-                  </Text>
+              Tracking for {userProfile.medicalConditionsDisplay.join(', ')}
+            </Text>
                   <Text style={styles.medicalNoteText}>
                     Consistent meal logging helps monitor your nutritional
                     adherence and supports better health management.

@@ -5,8 +5,8 @@ export interface UserProfile {
   gender: 'male' | 'female' | 'other';
   height: number; // cm
   weight: number; // kg
-  medicalCondition: string; // Slug key (e.g., 'diabetes', 'hypertension')
-  medicalConditionDisplay?: string; // Display name (e.g., 'Diabetes Type 2', 'Hypertension')
+  medicalConditions: string[]; // Slug keys (e.g., ['diabetes', 'hypertension'])
+  medicalConditionsDisplay: string[]; // Display names (e.g., ['Diabetes Type 2', 'Hypertension'])
   allergies: string[];
   dietaryRestrictions: string[];
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';

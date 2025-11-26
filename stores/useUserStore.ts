@@ -92,6 +92,30 @@ export const useUserStore = create<UserState>()(
     {
       name: 'user-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0) {
+          // Migration from v0 to v1: Convert single medicalCondition to array
+          const state = persistedState as UserState;
+          if (state.userProfile) {
+            const oldProfile = state.userProfile as any;
+            if (oldProfile.medicalCondition && !oldProfile.medicalConditions) {
+              state.userProfile = {
+                ...state.userProfile,
+                medicalConditions: [oldProfile.medicalCondition],
+                medicalConditionsDisplay: oldProfile.medicalConditionDisplay 
+                  ? [oldProfile.medicalConditionDisplay] 
+                  : [oldProfile.medicalCondition],
+              };
+              // Remove old fields if possible, or just ignore them
+              delete (state.userProfile as any).medicalCondition;
+              delete (state.userProfile as any).medicalConditionDisplay;
+            }
+          }
+          return state;
+        }
+        return persistedState;
+      },
     }
   )
 );

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -27,11 +28,13 @@ export default function MealPlanScreen() {
     userProfile,
     currentPlan,
     setCurrentPlan,
+    updateMealInPlan,
     favoriteMeals,
     toggleFavoriteMeal,
   } = useHealth();
   const [selectedDay, setSelectedDay] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [regeneratingMealId, setRegeneratingMealId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [apiStatus, setApiStatus] = useState<
     "unknown" | "connected" | "offline"
@@ -111,6 +114,26 @@ export default function MealPlanScreen() {
     }
   };
 
+  const handleRegenerateMeal = async (meal: MealItem, mealType: string, index: number) => {
+    if (!userProfile) return;
+    
+    setRegeneratingMealId(meal.id);
+    try {
+      // Map display title to internal key (e.g., "Breakfast" -> "breakfast")
+      const typeKey = mealType.toLowerCase();
+      
+      const newMeal = await AIDietService.regenerateMeal(meal, userProfile, mealType);
+      
+      updateMealInPlan(selectedDay, typeKey as any, index, newMeal);
+      showToast("Meal regenerated successfully! 🥗");
+    } catch (error) {
+      console.error("Regenerate Meal Error:", error);
+      showErrorToast("Failed to regenerate meal. Please try again.");
+    } finally {
+      setRegeneratingMealId(null);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -171,7 +194,7 @@ export default function MealPlanScreen() {
       <SafeAreaView style={styles.container}>
         <AILoader
           message="AI is creating your personalized meal plan"
-          subMessage={`Analyzing your ${userProfile?.medicalCondition} requirements`}
+          subMessage={`Analyzing your ${userProfile?.medicalConditionsDisplay.join(', ')} requirements`}
         />
       </SafeAreaView>
     );
@@ -199,7 +222,7 @@ export default function MealPlanScreen() {
             <Text style={styles.title}>Meal Plan 🍽️</Text>
             <View style={styles.subtitleContainer}>
               <Text style={styles.subtitle}>
-                Personalized for {userProfile.medicalCondition}
+                Personalized for {userProfile.medicalConditionsDisplay.join(', ')}
               </Text>
               {apiStatus === "connected" && (
                 <View style={styles.aiIndicator}>
@@ -358,6 +381,8 @@ export default function MealPlanScreen() {
                   meals={todayPlan.breakfast}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
+                  onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Breakfast", index)}
+                  regeneratingId={regeneratingMealId}
                 />
                 <MealSection
                   title="Lunch"
@@ -365,6 +390,8 @@ export default function MealPlanScreen() {
                   meals={todayPlan.lunch}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
+                  onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Lunch", index)}
+                  regeneratingId={regeneratingMealId}
                 />
                 <MealSection
                   title="Dinner"
@@ -372,6 +399,8 @@ export default function MealPlanScreen() {
                   meals={todayPlan.dinner}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
+                  onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Dinner", index)}
+                  regeneratingId={regeneratingMealId}
                 />
                 <MealSection
                   title="Snacks"
@@ -379,6 +408,8 @@ export default function MealPlanScreen() {
                   meals={todayPlan.snacks}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
+                  onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Snacks", index)}
+                  regeneratingId={regeneratingMealId}
                 />
               </View>
 
@@ -400,6 +431,8 @@ interface MealSectionProps {
   meals: MealItem[];
   favoriteMeals: MealItem[];
   toggleFavoriteMeal: (meal: MealItem) => void;
+  onRegenerate: (meal: MealItem, index: number) => void;
+  regeneratingId: string | null;
 }
 
 function MealSection({
@@ -408,6 +441,8 @@ function MealSection({
   meals,
   favoriteMeals,
   toggleFavoriteMeal,
+  onRegenerate,
+  regeneratingId,
 }: MealSectionProps) {
   if (meals.length === 0) return null;
 
@@ -455,16 +490,29 @@ function MealSection({
               {/* --- MODIFIED PART --- */}
               <View style={styles.mealNameContainer}>
                 <Text style={styles.mealName}>{meal.name}</Text>
-                <TouchableOpacity
-                  onPress={() => toggleFavoriteMeal(meal)}
-                  style={styles.favoriteButton}
-                >
-                  <Ionicons
-                    name={isFavorite ? "star" : "star-outline"}
-                    size={24}
-                    color={isFavorite ? "#FFD700" : "#B0B0B0"}
-                  />
-                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    onPress={() => onRegenerate(meal, index)}
+                    style={styles.actionButton}
+                    disabled={regeneratingId === meal.id}
+                  >
+                    {regeneratingId === meal.id ? (
+                      <ActivityIndicator size="small" color="#0066CC" />
+                    ) : (
+                      <MaterialIcons name="refresh" size={22} color="#0066CC" />
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => toggleFavoriteMeal(meal)}
+                    style={styles.actionButton}
+                  >
+                    <Ionicons
+                      name={isFavorite ? "star" : "star-outline"}
+                      size={22}
+                      color={isFavorite ? "#FFD700" : "#B0B0B0"}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
               {/* --- END MODIFIED PART --- */}
 
@@ -799,6 +847,14 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     flex: 1,
     marginRight: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
+    padding: 4,
   },
   mealPortion: {
     fontSize: 14,
