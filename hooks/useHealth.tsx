@@ -33,11 +33,12 @@ export function useHealth() {
 
     // Diet Plan
     currentPlan: planStore.currentPlan,
-    setCurrentPlan: planStore.setCurrentPlan,
-    clearCurrentPlan: planStore.clearCurrentPlan,
+    setCurrentPlan: usePlanStore((state) => state.setCurrentPlan),
+    clearCurrentPlan: usePlanStore((state) => state.clearCurrentPlan),
+    updateMealInPlan: usePlanStore((state) => state.updateMealInPlan),
 
     // Meal Logs & Favorites
-    mealLogs: journalStore.mealLogs,
+    mealLogs: useJournalStore((state) => state.mealLogs),
     favoriteMeals: journalStore.favoriteMeals,
     addMealLog: journalStore.addMealLog,
     updateMealLog: journalStore.updateMealLog,

@@ -69,7 +69,7 @@ export default function OnboardingScreen() {
     gender: "",
     height: "",
     weight: "",
-    medicalCondition: "",
+    medicalConditions: [] as string[],
     customCondition: "",
     allergies: "",
     dietaryRestrictions: "",
@@ -113,8 +113,8 @@ export default function OnboardingScreen() {
     }
   };
 
-  const validateField = (field: string, value: string): string | undefined => {
-    const v = String(value ?? "").trim();
+  const validateField = (field: string, value: any): string | undefined => {
+    const v = typeof value === 'string' ? value.trim() : value;
     switch (field) {
       case "name":
         if (!v) return "Name is required";
@@ -147,8 +147,8 @@ export default function OnboardingScreen() {
       case "gender":
         if (!v) return "Please select your gender";
         return undefined;
-      case "medicalCondition":
-        if (!v) return "Please select your medical condition";
+      case "medicalConditions":
+        if (value.length === 0) return "Please select at least one condition";
         return undefined;
       case "customCondition":
         if (!v) return "Please specify your medical condition";
@@ -164,8 +164,8 @@ export default function OnboardingScreen() {
     if (currentStep === 0) fields = ["name", "age", "gender"];
     else if (currentStep === 1) fields = ["height", "weight"];
     else if (currentStep === 2) {
-      fields = ["medicalCondition"];
-      if (formData.medicalCondition === "Other") fields.push("customCondition");
+      fields = ["medicalConditions"];
+      if (formData.medicalConditions.includes("Other")) fields.push("customCondition");
     } else {
       fields = [];
     }
@@ -241,17 +241,16 @@ export default function OnboardingScreen() {
 
   const handleComplete = async () => {
     try {
-      // Get the condition display name
-      const conditionDisplay =
-        formData.medicalCondition === "Other"
-          ? formData.customCondition
-          : formData.medicalCondition;
+      // Get the condition display names
+      const conditionsDisplay = formData.medicalConditions.map(c => 
+        c === "Other" ? formData.customCondition : c
+      );
 
-      // Map the display name to a standardized slug
-      const conditionSlug = mapConditionToSlug(conditionDisplay);
+      // Map to slugs
+      const conditionsSlug = conditionsDisplay.map(c => mapConditionToSlug(c));
 
       console.log(
-        `[ONBOARDING] Mapping condition "${conditionDisplay}" to slug "${conditionSlug}"`
+        `[ONBOARDING] Mapping conditions "${conditionsDisplay.join(', ')}" to slugs "${conditionsSlug.join(', ')}"`
       );
 
       const profile: UserProfile = {
@@ -261,8 +260,8 @@ export default function OnboardingScreen() {
         gender: formData.gender as "male" | "female" | "other",
         height: parseFloat(formData.height || "0"),
         weight: parseFloat(formData.weight || "0"),
-        medicalCondition: conditionSlug, // Use the standardized slug
-        medicalConditionDisplay: conditionDisplay, // Store the display name for UI
+        medicalConditions: conditionsSlug,
+        medicalConditionsDisplay: conditionsDisplay,
         allergies: formData.allergies
           .split(",")
           .map((a) => a.trim())
@@ -301,10 +300,10 @@ export default function OnboardingScreen() {
     } else if (currentStep === 1) {
       return nonEmpty("height") && nonEmpty("weight");
     } else if (currentStep === 2) {
-      if ((formData as any).medicalCondition === "Other") {
-        return nonEmpty("medicalCondition") && nonEmpty("customCondition");
+      if ((formData as any).medicalConditions.includes("Other")) {
+        return (formData as any).medicalConditions.length > 0 && nonEmpty("customCondition");
       }
-      return nonEmpty("medicalCondition");
+      return (formData as any).medicalConditions.length > 0;
     }
     // other steps: no required fields => valid
     return true;
@@ -404,52 +403,61 @@ export default function OnboardingScreen() {
       case 2:
         return (
           <StepContainer
-            title="Medical Condition"
-            subtitle="Select your primary condition for personalized nutrition"
+            title="Medical Conditions"
+            subtitle="Select all that apply for personalized nutrition"
           >
-            <Text style={styles.fieldLabel}>Primary Medical Condition *</Text>
+            <Text style={styles.fieldLabel}>Medical Conditions *</Text>
             <ScrollView
               style={styles.conditionsList}
               showsVerticalScrollIndicator={false}
             >
-              {MEDICAL_CONDITIONS.map((condition) => (
-                <TouchableOpacity
-                  key={condition}
-                  style={[
-                    styles.conditionButton,
-                    formData.medicalCondition === condition &&
-                      styles.conditionButtonSelected,
-                  ]}
-                  onPress={() => {
-                    updateField("medicalCondition", condition);
-                    setTouched((prev) => ({ ...prev, medicalCondition: true }));
-                    setErrors((prev) => ({
-                      ...prev,
-                      medicalCondition: undefined,
-                    }));
-                  }}
-                >
-                  <Text
+              {MEDICAL_CONDITIONS.map((condition) => {
+                const isSelected = formData.medicalConditions.includes(condition);
+                return (
+                  <TouchableOpacity
+                    key={condition}
                     style={[
-                      styles.conditionText,
-                      formData.medicalCondition === condition &&
-                        styles.conditionTextSelected,
+                      styles.conditionButton,
+                      isSelected && styles.conditionButtonSelected,
                     ]}
+                    onPress={() => {
+                      setFormData(prev => {
+                        const newConditions = isSelected
+                          ? prev.medicalConditions.filter(c => c !== condition)
+                          : [...prev.medicalConditions, condition];
+                        
+                        // Validate immediately
+                        if (touched.medicalConditions) {
+                          const err = newConditions.length === 0 ? "Please select at least one condition" : undefined;
+                          setErrors(prevErr => ({ ...prevErr, medicalConditions: err }));
+                        }
+                        
+                        return { ...prev, medicalConditions: newConditions };
+                      });
+                      setTouched((prev) => ({ ...prev, medicalConditions: true }));
+                    }}
                   >
-                    {condition}
-                  </Text>
-                  {formData.medicalCondition === condition && (
-                    <MaterialIcons name="check" size={20} color="#0066CC" />
-                  )}
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.conditionText,
+                        isSelected && styles.conditionTextSelected,
+                      ]}
+                    >
+                      {condition}
+                    </Text>
+                    {isSelected && (
+                      <MaterialIcons name="check" size={20} color="#0066CC" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
-            {touched.medicalCondition && errors.medicalCondition ? (
-              <Text style={styles.errorText}>{errors.medicalCondition}</Text>
+            {touched.medicalConditions && errors.medicalConditions ? (
+              <Text style={styles.errorText}>{errors.medicalConditions}</Text>
             ) : null}
 
-            {formData.medicalCondition === "Other" && (
+            {formData.medicalConditions.includes("Other") && (
               <InputField
                 label="Specify Condition"
                 value={formData.customCondition}
@@ -569,9 +577,9 @@ export default function OnboardingScreen() {
                   color="#0066CC"
                 />
                 <Text style={styles.summaryText}>
-                  {formData.medicalCondition === "Other"
-                    ? formData.customCondition
-                    : formData.medicalCondition}
+                  {formData.medicalConditions.map(c => 
+                    c === "Other" ? formData.customCondition : c
+                  ).join(", ")}
                 </Text>
               </View>
 

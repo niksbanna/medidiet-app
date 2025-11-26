@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { networkManager } from '../services/sync/NetworkManager';
 
 import { Platform } from 'react-native';
 import { setBackgroundColorAsync, setPositionAsync } from 'expo-navigation-bar';
@@ -24,6 +25,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      networkManager.initialize();
     }
   }, [loaded]);
 

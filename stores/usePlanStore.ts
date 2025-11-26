@@ -9,6 +9,7 @@ interface PlanState {
   // Actions
   setCurrentPlan: (plan: WeeklyPlan) => Promise<void>;
   clearCurrentPlan: () => Promise<void>;
+  updateMealInPlan: (dayIndex: number, mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks', mealIndex: number, newMeal: any) => void;
   
   // Reset
   reset: () => void;
@@ -25,6 +26,23 @@ export const usePlanStore = create<PlanState>()(
 
       clearCurrentPlan: async () => {
         set({ currentPlan: null });
+      },
+
+      updateMealInPlan: (dayIndex, mealType, mealIndex, newMeal) => {
+        set((state) => {
+          if (!state.currentPlan) return state;
+          
+          const newPlan = { ...state.currentPlan };
+          const day = newPlan.days[dayIndex];
+          
+          if (day && day[mealType]) {
+            const meals = [...day[mealType]];
+            meals[mealIndex] = newMeal;
+            day[mealType] = meals;
+          }
+          
+          return { currentPlan: newPlan };
+        });
       },
 
       reset: () => {

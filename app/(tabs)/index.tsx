@@ -80,7 +80,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerTextContainer}>
             <Text style={styles.greeting}>Hello, {userProfile.name}! 👋</Text>
-            <Text style={styles.subtitle}>Managing {userProfile.medicalCondition}</Text>
+            <Text style={styles.subtitle}>Managing {userProfile.medicalConditionsDisplay.join(', ')}</Text>
           </View>
           <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(tabs)/profile')}>
             <MaterialIcons name="person" size={24} color="#FFFFFF" />
@@ -178,7 +178,7 @@ export default function DashboardScreen() {
               </View>
               
               <Text style={styles.insightText}>
-                {getHealthInsight(userProfile.medicalCondition, adherenceRate, todayCalories, dailyCalories)}
+                {getHealthInsight(userProfile.medicalConditions[0], adherenceRate, todayCalories, dailyCalories)}
               </Text>
               
               <View style={styles.disclaimerContainer}>

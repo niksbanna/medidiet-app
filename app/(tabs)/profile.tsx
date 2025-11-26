@@ -96,8 +96,10 @@ export default function ProfileScreen() {
           break;
         case 'medicalCondition':
           // Store both the display name and the slug
-          updates.medicalConditionDisplay = editValue;
-          updates.medicalCondition = mapConditionToSlug(editValue);
+          // For simplicity in this version, we'll assume comma-separated values for editing
+          const displayValues = editValue.split(',').map(s => s.trim()).filter(Boolean);
+          updates.medicalConditionsDisplay = displayValues;
+          updates.medicalConditions = displayValues.map(v => mapConditionToSlug(v));
           break;
       }
 
@@ -205,7 +207,7 @@ export default function ProfileScreen() {
               </View>
             </View>
             <Text style={styles.headerName}>{userProfile.name}</Text>
-            <Text style={styles.headerSubtitle}>{userProfile.medicalConditionDisplay || userProfile.medicalCondition}</Text>
+            <Text style={styles.headerSubtitle}>{userProfile.medicalConditionsDisplay.join(', ')}</Text>
             <View style={styles.headerStats}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{daysActive}</Text>
@@ -293,8 +295,8 @@ export default function ProfileScreen() {
             <InfoRow
               icon="local-hospital"
               label="Medical Condition"
-              value={userProfile.medicalConditionDisplay || userProfile.medicalCondition}
-              onEdit={() => handleEditField('medicalCondition', userProfile.medicalConditionDisplay || userProfile.medicalCondition)}
+              value={userProfile.medicalConditionsDisplay.join(', ')}
+              onEdit={() => handleEditField('medicalCondition', userProfile.medicalConditionsDisplay.join(', '))}
               isLast
             />
           </View>
@@ -343,7 +345,7 @@ export default function ProfileScreen() {
                 <MaterialIcons name="emoji-objects" size={32} color="#0066CC" />
                 <Text style={styles.insightTitle}>Your AI Health Assistant is Active</Text>
                 <Text style={styles.insightText}>
-                  Your personalized meal plan is optimized for {(userProfile.medicalConditionDisplay || userProfile.medicalCondition).toLowerCase()}.
+                  Your personalized meal plan is optimized for {userProfile.medicalConditionsDisplay.join(', ').toLowerCase()}.
                   Keep logging meals to help AI improve recommendations!
                 </Text>
                 <View style={styles.insightStats}>

@@ -1,5 +1,6 @@
 import { UserProfile, DayPlan, WeeklyPlan, MealItem, NutrientInfo } from '../types/health';
 import { ApiKeyNotConfiguredError, InvalidApiKeyError, ApiRequestError } from './errors';
+import { apiClient } from './api/ApiClient';
 
 // AI API configuration
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
@@ -61,29 +62,95 @@ export class GeminiService {
     }
   }
 
+  static async regenerateMeal(currentMeal: MealItem, userProfile: UserProfile, mealType: string): Promise<MealItem> {
+    const effectiveApiKey = userProfile.geminiApiKey || '';
+    if (!this.validateApiKey(effectiveApiKey)) {
+      throw new ApiKeyNotConfiguredError('AI API key not configured.');
+    }
+
+    const conditions = userProfile.medicalConditions.join(' and ');
+    const guidelines = this.getMedicalGuidelines(userProfile.medicalConditions);
+
+    const prompt = `You are a clinical nutritionist. Regenerate a single ${mealType} option for a patient with ${conditions}.
+    
+    PATIENT PROFILE:
+    - Name: ${userProfile.name}
+    - Medical Conditions: ${conditions}
+    - Allergies: ${userProfile.allergies.join(', ') || 'None'}
+    - Dietary Restrictions: ${userProfile.dietaryRestrictions.join(', ') || 'None'}
+    
+    CURRENT MEAL (to replace): "${currentMeal.name}"
+    REASON: Patient requested an alternative.
+    
+    MEDICAL GUIDELINES:
+    ${guidelines}
+    
+    RESPONSE FORMAT (JSON):
+    {
+      "name": "New Meal Name",
+      "portion": "1 serving",
+      "nutrients": {
+        "calories": 0,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 0,
+        "fiber": 0,
+        "sodium": 0,
+        "potassium": 0,
+        "calcium": 0,
+        "iron": 0
+      },
+      "medicalNotes": "Why this is good for the condition"
+    }
+    
+    REQUIREMENTS:
+    1. Must be different from the current meal.
+    2. Must be strictly safe for ${conditions}.
+    3. Provide realistic nutrient values.`;
+
+    try {
+      const response = await this.callGeminiAPI(prompt, effectiveApiKey);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found');
+      
+      const data = JSON.parse(jsonMatch[0]);
+      return {
+        id: `meal_regen_${Date.now()}`,
+        name: data.name,
+        portion: data.portion,
+        nutrients: data.nutrients,
+        medicalNotes: data.medicalNotes
+      };
+    } catch (error) {
+      console.error('Regenerate Meal Error:', error);
+      throw new ApiRequestError('Failed to regenerate meal.');
+    }
+  }
+
   private static createMedicalDietPrompt(profile: UserProfile): string {
     const bmr = this.calculateBMR(profile);
     const dailyCalories = Math.round(bmr * this.getActivityMultiplier(profile.activityLevel));
+    const conditions = profile.medicalConditions.join(' and ');
 
-    return `You are a clinical nutritionist AI creating a 7-day meal plan for a patient with ${profile.medicalCondition}.
+    return `You are a clinical nutritionist AI creating a 7-day meal plan for a patient with ${conditions}.
 
 PATIENT PROFILE:
 - Name: ${profile.name}
 - Age: ${profile.age}, Gender: ${profile.gender}
 - Height: ${profile.height}cm, Weight: ${profile.weight}kg
-- Medical Condition: ${profile.medicalCondition}
+- Medical Conditions: ${conditions}
 - Activity Level: ${profile.activityLevel}
 - Daily Calorie Target: ${dailyCalories} kcal
 - Food Allergies: ${profile.allergies.length > 0 ? profile.allergies.join(', ') : 'None'}
 - Dietary Restrictions: ${profile.dietaryRestrictions.length > 0 ? profile.dietaryRestrictions.join(', ') : 'None'}
 
-MEDICAL REQUIREMENTS FOR ${profile.medicalCondition.toUpperCase()}:
-${this.getMedicalGuidelines(profile.medicalCondition)}
+MEDICAL REQUIREMENTS:
+${this.getMedicalGuidelines(profile.medicalConditions)}
 
 RESPONSE FORMAT REQUIRED (JSON):
 {
   "weeklyPlan": {
-    "condition": "${profile.medicalCondition}",
+    "condition": "${conditions}",
     "days": [
       {
         "date": "2024-01-01",
@@ -119,9 +186,9 @@ RESPONSE FORMAT REQUIRED (JSON):
 
 CRITICAL REQUIREMENTS:
 1. All nutrition values must be realistic and evidence-based
-2. Include 2-3 medical guidelines per day specific to ${profile.medicalCondition}
+2. Include 2-3 medical guidelines per day specific to ${conditions}
 3. Ensure total daily calories are within ±100 of ${dailyCalories}
-4. Avoid foods contraindicated for ${profile.medicalCondition}
+4. Avoid foods contraindicated for ${conditions}
 5. Include medicalNotes for foods that specifically benefit the condition
 6. Provide exactly 7 days of meal plans
 7. Each day should have breakfast, lunch, dinner, and snacks arrays
@@ -130,8 +197,8 @@ CRITICAL REQUIREMENTS:
 MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consult healthcare provider before making dietary changes.`;
   }
 
-  private static getMedicalGuidelines(condition: string): string {
-    const guidelines: { [key: string]: string } = {
+  private static getMedicalGuidelines(conditions: string[]): string {
+    const allGuidelines: { [key: string]: string } = {
       'diabetes': `
 - Limit simple carbohydrates and focus on complex carbs with low glycemic index
 - Include fiber-rich foods to slow glucose absorption
@@ -189,8 +256,14 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
 - Include healthy fats from plant sources for hormone regulation`
     };
 
-    // The condition should already be in slug format from the onboarding process
-    return guidelines[condition] || guidelines['diabetes']; // Default to diabetes guidelines
+    let mergedGuidelines = '';
+    conditions.forEach(condition => {
+      if (allGuidelines[condition]) {
+        mergedGuidelines += `\nGUIDELINES FOR ${condition.toUpperCase().replace('_', ' ')}:${allGuidelines[condition]}\n`;
+      }
+    });
+
+    return mergedGuidelines || allGuidelines['diabetes'];
   }
 
   private static calculateBMR(profile: UserProfile): number {
@@ -253,21 +326,34 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
     console.log('[GEMINI SERVICE] Making API request...');
     console.log('[GEMINI SERVICE] API URL:', GEMINI_API_URL);
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${encodedApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
-    });
+    console.log('[GEMINI SERVICE] Making API request...');
+    console.log('[GEMINI SERVICE] API URL:', GEMINI_API_URL);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error('AI API Error:', response.status, errorData);
+    try {
+      // Use apiClient with retry logic (3 retries, 1s delay)
+      const response = await apiClient.post<GeminiResponse>(
+        `${GEMINI_API_URL}?key=${encodedApiKey}`,
+        requestBody,
+        {
+          retries: 3,
+          retryDelay: 1000,
+          timeout: 30000, // 30s timeout for AI generation
+        }
+      );
 
-      // Check for invalid API key (400 or 403 status codes)
-      if (response.status === 400 || response.status === 403) {
-        const errorMessage = errorData?.error?.message || '';
+      const data = response.data;
+
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new ApiRequestError('No response generated from AI API');
+      }
+
+      return data.candidates[0].content.parts[0].text;
+    } catch (error: any) {
+      console.error('AI API Error:', error);
+
+      // Handle specific API errors
+      if (error.status === 400 || error.status === 403) {
+        const errorMessage = error.data?.error?.message || '';
         if (errorMessage.toLowerCase().includes('api key') ||
             errorMessage.toLowerCase().includes('invalid') ||
             errorMessage.toLowerCase().includes('not valid')) {
@@ -275,16 +361,8 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
         }
       }
 
-      throw new ApiRequestError(`API request failed: ${response.status}`);
+      throw new ApiRequestError(`API request failed: ${error.message || error.status}`);
     }
-
-    const data: GeminiResponse = await response.json();
-
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new ApiRequestError('No response generated from AI API');
-    }
-
-    return data.candidates[0].content.parts[0].text;
   }
 
   private static parseDietPlanResponse(response: string, profile: UserProfile): WeeklyPlan {
@@ -327,7 +405,7 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
         id: `ai_plan_${Date.now()}`,
         weekOf: new Date().toISOString().split('T')[0],
         days,
-        condition: profile.medicalCondition,
+        condition: profile.medicalConditions.join(', '),
         generatedAt: new Date()
       };
     } catch (error) {
