@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import { useHealth } from "../hooks/useHealth";
 import { UserProfile } from "../types/health";
 import {
@@ -61,6 +61,7 @@ const ACTIVITY_LEVELS = [
 
 export default function OnboardingScreen() {
   const { updateUserProfile } = useHealth();
+  const navigation = useNavigation();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
@@ -183,7 +184,7 @@ export default function OnboardingScreen() {
     setErrors((prev) => ({ ...prev, ...newErrors }));
 
     // show ALL errors as toasts (one toast per error)
-    const errorValues = Object.values(newErrors);
+    const errorValues = Object.values(newErrors).filter((e): e is string => !!e);
     if (errorValues.length > 0) {
       errorValues.forEach((msg, idx) => {
         setTimeout(() => showWarningToast(msg), idx * 200);
@@ -622,7 +623,13 @@ export default function OnboardingScreen() {
             <View style={styles.header}>
               {/* keep original back behavior */}
               <TouchableOpacity
-                onPress={() => router.back()}
+                onPress={() => {
+                  if (navigation.canGoBack()) {
+                    router.back();
+                  } else {
+                    router.replace('/');
+                  }
+                }}
                 style={styles.backButton}
               >
                 <View style={styles.backButtonCircle}>
