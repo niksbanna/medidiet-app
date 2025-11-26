@@ -588,7 +588,7 @@ export default function MealLogScreen() {
                     sections={quickAddData}
                     keyExtractor={(item, index) => item.id + index}
                     renderItem={renderModalQuickAddItem} // <-- Use new render function
-                    numColumns={2} // <-- THE KEY CHANGE FOR 2 COLUMNS
+
                     renderSectionHeader={({ section: { title } }) => (
                       <Text style={styles.quickAddHeader}>{title}</Text>
                     )}

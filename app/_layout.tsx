@@ -4,7 +4,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { HealthProvider } from '../contexts/HealthContext';
+
 import { Platform } from 'react-native';
 import { setBackgroundColorAsync, setPositionAsync } from 'expo-navigation-bar';
 
@@ -33,14 +33,12 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <HealthProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
         <StatusBar style="dark" />
-      </HealthProvider>
     </SafeAreaProvider>
   );
 }

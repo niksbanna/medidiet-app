@@ -1,10 +1,55 @@
-import { useContext } from 'react';
-import { HealthContext } from '../contexts/HealthContext';
+import { useUserStore } from '../stores/useUserStore';
+import { usePlanStore } from '../stores/usePlanStore';
+import { useJournalStore } from '../stores/useJournalStore';
+import { useHealthStore } from '../stores/useHealthStore';
 
 export function useHealth() {
-  const context = useContext(HealthContext);
-  if (!context) {
-    throw new Error('useHealth must be used within HealthProvider');
-  }
-  return context;
+  const userStore = useUserStore();
+  const planStore = usePlanStore();
+  const journalStore = useJournalStore();
+  const healthStore = useHealthStore();
+
+  const logout = async () => {
+    userStore.reset();
+    planStore.reset();
+    journalStore.reset();
+    healthStore.reset();
+  };
+
+  return {
+    // User Profile
+    userProfile: userStore.userProfile,
+    isLoading: userStore.isLoading,
+    updateUserProfile: userStore.updateUserProfile,
+    clearUserProfile: userStore.clearUserProfile,
+    
+    // API Keys
+    updateGeminiApiKey: userStore.updateGeminiApiKey,
+    getGeminiApiKey: userStore.getGeminiApiKey,
+    updateOpenAIApiKey: userStore.updateOpenAIApiKey,
+    getOpenAIApiKey: userStore.getOpenAIApiKey,
+    updatePreferredAiProvider: userStore.updatePreferredAiProvider,
+    getPreferredAiProvider: userStore.getPreferredAiProvider,
+
+    // Diet Plan
+    currentPlan: planStore.currentPlan,
+    setCurrentPlan: planStore.setCurrentPlan,
+    clearCurrentPlan: planStore.clearCurrentPlan,
+
+    // Meal Logs & Favorites
+    mealLogs: journalStore.mealLogs,
+    favoriteMeals: journalStore.favoriteMeals,
+    addMealLog: journalStore.addMealLog,
+    updateMealLog: journalStore.updateMealLog,
+    deleteMealLog: journalStore.deleteMealLog,
+    toggleFavoriteMeal: journalStore.toggleFavoriteMeal,
+
+    // Health Progress
+    healthProgress: healthStore.healthProgress,
+    addHealthProgress: healthStore.addHealthProgress,
+    getAdherenceRate: healthStore.getAdherenceRate,
+
+    // Logout
+    logout,
+  };
 }
