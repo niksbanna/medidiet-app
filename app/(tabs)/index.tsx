@@ -20,7 +20,7 @@ import MedicalDisclaimer from '../../components/ui/MedicalDisclaimer';
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
-  const { userProfile, currentPlan, mealLogs, healthProgress, getAdherenceRate } = useHealth();
+  const { userProfile, mealLogs, healthProgress, getAdherenceRate } = useHealth();
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;

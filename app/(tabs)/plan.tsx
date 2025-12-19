@@ -10,17 +10,16 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useHealth } from "../../hooks/useHealth";
 import { AIDietService } from "../../services/aiDietService";
 import { ApiKeyNotConfiguredError, InvalidApiKeyError } from "../../services/errors";
-import { DayPlan, MealItem } from "../../types/health";
+import { MealItem } from "../../types/health";
 import NutrientBar from "../../components/ui/NutrientBar";
 import MedicalDisclaimer from "../../components/ui/MedicalDisclaimer";
 import AILoader from "../../components/ui/AILoader";
 import { showToast, showErrorToast, showWarningToast } from "../../utils/toast";
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
 export default function MealPlanScreen() {

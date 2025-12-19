@@ -23,7 +23,7 @@ import { showSuccessToast, showErrorToast, showWarningToast } from '../utils/toa
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
-  const { userProfile, isLoading, updateUserProfile } = useHealth();
+  const { userProfile, isLoading } = useHealth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -115,7 +115,7 @@ export default function WelcomeScreen() {
       } else {
         router.push('/onboarding');
       }
-    } catch (error) {
+    } catch {
       showErrorToast('Login failed. Please try again.');
     }
   };
