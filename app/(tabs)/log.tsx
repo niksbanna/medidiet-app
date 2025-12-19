@@ -197,7 +197,7 @@ export default function MealLogScreen() {
       setAdherenceRating(8);
       setShowQuickAdd(false); // --- Reset dropdown state on close
       showSuccessToast("Meal logged successfully!");
-    } catch (error) {
+    } catch {
       showErrorToast("Failed to log meal. Please try again.");
     }
   };

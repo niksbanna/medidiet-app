@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
-  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -23,8 +22,6 @@ import {
   showSuccessToast,
 } from "../utils/toast";
 import { mapConditionToSlug } from "../utils/conditionMapper";
-
-const { width } = Dimensions.get("window");
 
 const MEDICAL_CONDITIONS = [
   "Diabetes Type 1",
@@ -281,7 +278,7 @@ export default function OnboardingScreen() {
       setTimeout(() => {
         router.replace("/(tabs)");
       }, 500);
-    } catch (error) {
+    } catch {
       showErrorToast("Failed to save profile. Please try again.");
     } finally {
       setIsSubmitting(false);

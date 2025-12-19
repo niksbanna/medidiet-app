@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -106,7 +105,7 @@ export default function ProfileScreen() {
       await updateUserProfile(updates);
       setEditModalVisible(false);
       showSuccessToast('Profile updated successfully!');
-    } catch (error) {
+    } catch {
       showErrorToast('Failed to update profile');
     }
   };
@@ -116,7 +115,7 @@ export default function ProfileScreen() {
       await logout();
       router.replace('/onboarding');
       showSuccessToast('Logged out successfully');
-    } catch (error) {
+    } catch {
       showErrorToast('Failed to logout');
     }
   };
@@ -143,7 +142,7 @@ export default function ProfileScreen() {
       await updateGeminiApiKey(trimmedApiKey);
       setShowApiKeyModal(false);
       showSuccessToast('Gemini API key updated successfully!');
-    } catch (error) {
+    } catch {
       showErrorToast('Failed to update API key');
     }
   };
@@ -160,7 +159,7 @@ export default function ProfileScreen() {
       await updateOpenAIApiKey(trimmedApiKey);
       setShowOpenAIKeyModal(false);
       showSuccessToast('OpenAI API key updated successfully!');
-    } catch (error) {
+    } catch {
       showErrorToast('Failed to update API key');
     }
   };
@@ -170,7 +169,7 @@ export default function ProfileScreen() {
       await updatePreferredAiProvider(provider);
       setCurrentApiProvider(provider);
       showSuccessToast(`Switched to ${provider.toUpperCase()} as the AI provider`);
-    } catch (error) {
+    } catch {
       showErrorToast('Failed to update AI provider');
     }
   };
