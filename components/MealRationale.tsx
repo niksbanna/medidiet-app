@@ -27,15 +27,21 @@ function normalizeKeyPart(value: string): string {
     .replace(/[^a-z0-9-]/g, '');
 }
 
-function getMealCacheKey(meal: MealItem, dayDate?: string, mealType?: string): string {
+function getMealCacheKey(
+  meal: MealItem,
+  userProfile: UserProfile,
+  dayDate?: string,
+  mealType?: string
+): string {
+  const userSegment = normalizeKeyPart(userProfile.id || userProfile.name || 'anonymous');
   if (meal.id && meal.id.trim().length > 0) {
-    return `meal-id:${meal.id}`;
+    return `user:${userSegment}:meal-id:${meal.id}`;
   }
 
   const stableDay = normalizeKeyPart(dayDate || 'unknown-day');
   const stableType = normalizeKeyPart(mealType || 'unknown-type');
   const stableName = normalizeKeyPart(meal.name || 'unknown-meal');
-  return `meal-derived:${stableDay}:${stableType}:${stableName}`;
+  return `user:${userSegment}:meal-derived:${stableDay}:${stableType}:${stableName}`;
 }
 
 async function readAsyncStorageCache(key: string): Promise<string[] | null> {
@@ -64,7 +70,10 @@ async function writeAsyncStorageCache(key: string, bullets: string[]): Promise<v
 }
 
 export default function MealRationale({ meal, userProfile, dayDate, mealType }: MealRationaleProps) {
-  const cacheKey = useMemo(() => getMealCacheKey(meal, dayDate, mealType), [meal, dayDate, mealType]);
+  const cacheKey = useMemo(
+    () => getMealCacheKey(meal, userProfile, dayDate, mealType),
+    [meal, userProfile, dayDate, mealType]
+  );
   const [state, setState] = useState<LoadState>('loading');
   const [bullets, setBullets] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState('Unable to load meal rationale right now.');

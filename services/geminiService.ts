@@ -357,7 +357,7 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
       .map((bullet) => String(bullet).replace(/^[\s\-*•\d.)]+/, '').trim())
       .filter((bullet) => bullet.length > 0)
       .map((bullet) => bullet.replace(/\s+/g, ' '))
-      .filter((bullet) => bullet.length <= 160);
+      .filter((bullet) => bullet.length <= 120);
 
     return [...new Set(cleaned)].slice(0, 4);
   }

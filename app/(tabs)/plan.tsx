@@ -490,7 +490,7 @@ function MealSection({
         const isFavorite = favoriteMeals.some(
           (favMeal) => favMeal.id === meal.id
         );
-        const mealKey = meal.id || `${title}-${dayDate}-${index}-${meal.name}`;
+        const mealKey = meal.id || `${title}-${dayDate}-${meal.name}-${meal.portion}`;
         const isExpanded = expandedMealKey === mealKey;
 
         return (
@@ -863,11 +863,11 @@ const styles = StyleSheet.create({
   mealItemContainer: {
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
-    paddingVertical: 14,
   },
   mealItem: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 14,
   },
   mealItemLast: {
     borderBottomWidth: 0,
