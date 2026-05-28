@@ -127,6 +127,71 @@ export class GeminiService {
     }
   }
 
+  static async explainMealRationale(meal: MealItem, userProfile: UserProfile): Promise<string[]> {
+    const effectiveApiKey = (userProfile.geminiApiKey || '')
+      .trim()
+      .replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+    if (!this.validateApiKey(effectiveApiKey)) {
+      return this.buildLocalMealRationale(meal, userProfile);
+    }
+
+    try {
+      const prompt = this.createMealRationalePrompt(meal, userProfile);
+      const response = await this.callGeminiAPI(prompt, effectiveApiKey);
+      const parsedBullets = this.parseMealRationaleResponse(response);
+      if (parsedBullets.length >= 2) {
+        return parsedBullets;
+      }
+    } catch (error) {
+      console.warn('[GEMINI SERVICE] Meal rationale API unavailable, using local fallback:', error);
+    }
+
+    return this.buildLocalMealRationale(meal, userProfile);
+  }
+
+  private static createMealRationalePrompt(meal: MealItem, profile: UserProfile): string {
+    const conditions = profile.medicalConditionsDisplay.length > 0
+      ? profile.medicalConditionsDisplay.join(', ')
+      : profile.medicalConditions.join(', ');
+
+    return `You are a nutrition assistant. Explain why this meal can fit this user's dietary context.
+
+USER PROFILE:
+- Medical conditions: ${conditions || 'None listed'}
+- Allergies: ${profile.allergies.length > 0 ? profile.allergies.join(', ') : 'None listed'}
+- Dietary restrictions: ${profile.dietaryRestrictions.length > 0 ? profile.dietaryRestrictions.join(', ') : 'None listed'}
+- Activity level: ${profile.activityLevel}
+
+MEAL:
+- Name: ${meal.name}
+- Portion: ${meal.portion}
+- Calories: ${meal.nutrients.calories} kcal
+- Protein: ${meal.nutrients.protein} g
+- Carbs: ${meal.nutrients.carbs} g
+- Fat: ${meal.nutrients.fat} g
+- Fiber: ${meal.nutrients.fiber} g
+- Sodium: ${meal.nutrients.sodium} mg
+- Potassium: ${meal.nutrients.potassium} mg
+- Calcium: ${meal.nutrients.calcium} mg
+- Iron: ${meal.nutrients.iron} mg
+
+Return ONLY valid JSON in this exact shape:
+{
+  "bullets": [
+    "bullet 1",
+    "bullet 2"
+  ]
+}
+
+Rules:
+- Include 2 to 4 concise bullet points.
+- Keep each bullet under 120 characters.
+- Use a safe informational tone.
+- No diagnosis, no treatment claims, no promises.
+- Mention nutrient values when relevant.`;
+  }
+
   private static createMedicalDietPrompt(profile: UserProfile): string {
     const bmr = this.calculateBMR(profile);
     const dailyCalories = Math.round(bmr * this.getActivityMultiplier(profile.activityLevel));
@@ -264,6 +329,97 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
     });
 
     return mergedGuidelines || allGuidelines['diabetes'];
+  }
+
+  private static parseMealRationaleResponse(response: string): string[] {
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]) as { bullets?: unknown };
+        if (Array.isArray(parsed.bullets)) {
+          return this.sanitizeMealRationaleBullets(parsed.bullets);
+        }
+      } catch (error) {
+        console.warn('[GEMINI SERVICE] Failed to parse meal rationale JSON:', error);
+      }
+    }
+
+    const lineBullets = response
+      .split('\n')
+      .map((line) => line.replace(/^[\s\-*•\d.)]+/, '').trim())
+      .filter((line) => line.length > 0);
+
+    return this.sanitizeMealRationaleBullets(lineBullets);
+  }
+
+  private static sanitizeMealRationaleBullets(bullets: unknown[]): string[] {
+    const cleaned = bullets
+      .map((bullet) => String(bullet).replace(/^[\s\-*•\d.)]+/, '').trim())
+      .filter((bullet) => bullet.length > 0)
+      .map((bullet) => bullet.replace(/\s+/g, ' '))
+      .filter((bullet) => bullet.length <= 120);
+
+    return [...new Set(cleaned)].slice(0, 4);
+  }
+
+  private static buildLocalMealRationale(meal: MealItem, userProfile: UserProfile): string[] {
+    const bullets: string[] = [];
+    const nutrients = meal.nutrients;
+    const conditions = userProfile.medicalConditions;
+
+    if (conditions.includes('hypertension')) {
+      if (nutrients.sodium <= 300) {
+        bullets.push(`Lower sodium (${Math.round(nutrients.sodium)} mg) supports blood-pressure-friendly choices.`);
+      } else {
+        bullets.push(`Sodium is ${Math.round(nutrients.sodium)} mg, so balancing with low-sodium meals may help.`);
+      }
+      if (nutrients.potassium >= 350) {
+        bullets.push(`Potassium (${Math.round(nutrients.potassium)} mg) can support balanced daily mineral intake.`);
+      }
+    }
+
+    if (conditions.includes('diabetes')) {
+      if (nutrients.fiber >= 5) {
+        bullets.push(`Fiber (${Math.round(nutrients.fiber)} g) may support steadier post-meal glucose response.`);
+      }
+      if (nutrients.protein >= 15) {
+        bullets.push(`Protein (${Math.round(nutrients.protein)} g) can help with fullness and balanced meals.`);
+      } else {
+        bullets.push(`Carb amount (${Math.round(nutrients.carbs)} g) is easier to plan when paired with protein.`);
+      }
+    }
+
+    if (conditions.includes('kidney_disease')) {
+      bullets.push(`Portion-aware protein (${Math.round(nutrients.protein)} g) may fit kidney-conscious planning.`);
+      bullets.push(`Sodium awareness (${Math.round(nutrients.sodium)} mg) supports fluid-balance goals.`);
+    }
+
+    if (conditions.includes('heart_disease')) {
+      bullets.push(`Fiber (${Math.round(nutrients.fiber)} g) and lower sodium can align with heart-friendly patterns.`);
+    }
+
+    if (conditions.includes('pcos')) {
+      bullets.push('Protein and fiber combination can support more stable energy across the day.');
+    }
+
+    if (bullets.length < 4 && nutrients.fiber >= 4) {
+      bullets.push(`Fiber (${Math.round(nutrients.fiber)} g) supports digestive health and meal satisfaction.`);
+    }
+
+    if (bullets.length < 4 && nutrients.protein >= 12) {
+      bullets.push(`Protein (${Math.round(nutrients.protein)} g) helps make this meal more balanced.`);
+    }
+
+    if (bullets.length < 4 && userProfile.dietaryRestrictions.length > 0) {
+      bullets.push(`It can be adjusted to match your listed restrictions: ${userProfile.dietaryRestrictions.join(', ')}.`);
+    }
+
+    if (bullets.length < 2) {
+      bullets.push(`This meal provides ${Math.round(nutrients.calories)} kcal in a portion-controlled serving.`);
+      bullets.push(`Use it as informational guidance and personalize it with your care team's advice.`);
+    }
+
+    return [...new Set(bullets)].slice(0, 4);
   }
 
   private static calculateBMR(profile: UserProfile): number {
@@ -451,3 +607,6 @@ MEDICAL DISCLAIMER: This is advisory nutritional guidance. Patient should consul
     });
   }
 }
+
+export const explainMealRationale = (meal: MealItem, userProfile: UserProfile): Promise<string[]> =>
+  GeminiService.explainMealRationale(meal, userProfile);
