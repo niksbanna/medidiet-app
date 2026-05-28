@@ -15,10 +15,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useHealth } from "../../hooks/useHealth";
 import { AIDietService } from "../../services/aiDietService";
 import { ApiKeyNotConfiguredError, InvalidApiKeyError } from "../../services/errors";
-import { MealItem } from "../../types/health";
+import { MealItem, UserProfile } from "../../types/health";
 import NutrientBar from "../../components/ui/NutrientBar";
 import MedicalDisclaimer from "../../components/ui/MedicalDisclaimer";
 import AILoader from "../../components/ui/AILoader";
+import MealRationale from "../../components/MealRationale";
 import { showToast, showErrorToast, showWarningToast } from "../../utils/toast";
 import { router } from "expo-router";
 
@@ -378,6 +379,8 @@ export default function MealPlanScreen() {
                   title="Breakfast"
                   icon="wb-sunny"
                   meals={todayPlan.breakfast}
+                  userProfile={userProfile}
+                  dayDate={todayPlan.date}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
                   onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Breakfast", index)}
@@ -387,6 +390,8 @@ export default function MealPlanScreen() {
                   title="Lunch"
                   icon="wb-cloudy"
                   meals={todayPlan.lunch}
+                  userProfile={userProfile}
+                  dayDate={todayPlan.date}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
                   onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Lunch", index)}
@@ -396,6 +401,8 @@ export default function MealPlanScreen() {
                   title="Dinner"
                   icon="brightness-3"
                   meals={todayPlan.dinner}
+                  userProfile={userProfile}
+                  dayDate={todayPlan.date}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
                   onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Dinner", index)}
@@ -405,6 +412,8 @@ export default function MealPlanScreen() {
                   title="Snacks"
                   icon="local-cafe"
                   meals={todayPlan.snacks}
+                  userProfile={userProfile}
+                  dayDate={todayPlan.date}
                   favoriteMeals={favoriteMeals}
                   toggleFavoriteMeal={toggleFavoriteMeal}
                   onRegenerate={(meal, index) => handleRegenerateMeal(meal, "Snacks", index)}
@@ -428,6 +437,8 @@ interface MealSectionProps {
   title: string;
   icon: keyof typeof MaterialIcons.glyphMap;
   meals: MealItem[];
+  userProfile: UserProfile;
+  dayDate: string;
   favoriteMeals: MealItem[];
   toggleFavoriteMeal: (meal: MealItem) => void;
   onRegenerate: (meal: MealItem, index: number) => void;
@@ -438,11 +449,15 @@ function MealSection({
   title,
   icon,
   meals,
+  userProfile,
+  dayDate,
   favoriteMeals,
   toggleFavoriteMeal,
   onRegenerate,
   regeneratingId,
 }: MealSectionProps) {
+  const [expandedMealKey, setExpandedMealKey] = useState<string | null>(null);
+
   if (meals.length === 0) return null;
 
   const iconColors: Record<string, string> = {
@@ -472,74 +487,93 @@ function MealSection({
       </View>
 
       {meals.map((meal, index) => {
-        // Add this logic
         const isFavorite = favoriteMeals.some(
           (favMeal) => favMeal.id === meal.id
         );
+        const mealKey = meal.id || `${title}-${dayDate}-${index}-${meal.name}`;
+        const isExpanded = expandedMealKey === mealKey;
 
         return (
           <View
-            key={index}
+            key={mealKey}
             style={[
-              styles.mealItem,
+              styles.mealItemContainer,
               index === meals.length - 1 && styles.mealItemLast,
             ]}
           >
-            <View style={styles.mealInfo}>
-              {/* --- MODIFIED PART --- */}
-              <View style={styles.mealNameContainer}>
-                <Text style={styles.mealName}>{meal.name}</Text>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    onPress={() => onRegenerate(meal, index)}
-                    style={styles.actionButton}
-                    disabled={regeneratingId === meal.id}
-                  >
-                    {regeneratingId === meal.id ? (
-                      <ActivityIndicator size="small" color="#0066CC" />
-                    ) : (
-                      <MaterialIcons name="refresh" size={22} color="#0066CC" />
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => toggleFavoriteMeal(meal)}
-                    style={styles.actionButton}
-                  >
-                    <Ionicons
-                      name={isFavorite ? "star" : "star-outline"}
-                      size={22}
-                      color={isFavorite ? "#FFD700" : "#B0B0B0"}
+            <TouchableOpacity
+              style={styles.mealItem}
+              activeOpacity={0.85}
+              onPress={() => setExpandedMealKey(isExpanded ? null : mealKey)}
+            >
+              <View style={styles.mealInfo}>
+                <View style={styles.mealNameContainer}>
+                  <Text style={styles.mealName}>{meal.name}</Text>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      onPress={() => onRegenerate(meal, index)}
+                      style={styles.actionButton}
+                      disabled={regeneratingId === meal.id}
+                    >
+                      {regeneratingId === meal.id ? (
+                        <ActivityIndicator size="small" color="#0066CC" />
+                      ) : (
+                        <MaterialIcons name="refresh" size={22} color="#0066CC" />
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => toggleFavoriteMeal(meal)}
+                      style={styles.actionButton}
+                    >
+                      <Ionicons
+                        name={isFavorite ? "star" : "star-outline"}
+                        size={22}
+                        color={isFavorite ? "#FFD700" : "#B0B0B0"}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <Text style={styles.mealPortion}>{meal.portion}</Text>
+                {meal.medicalNotes && (
+                  <View style={styles.medicalNotesContainer}>
+                    <MaterialIcons
+                      name="local-hospital"
+                      size={12}
+                      color="#0066CC"
                     />
-                  </TouchableOpacity>
-                </View>
+                    <Text style={styles.medicalNotes}>{meal.medicalNotes}</Text>
+                  </View>
+                )}
               </View>
-              {/* --- END MODIFIED PART --- */}
-
-              <Text style={styles.mealPortion}>{meal.portion}</Text>
-              {meal.medicalNotes && (
-                <View style={styles.medicalNotesContainer}>
-                  <MaterialIcons
-                    name="local-hospital"
-                    size={12}
-                    color="#0066CC"
-                  />
-                  <Text style={styles.medicalNotes}>{meal.medicalNotes}</Text>
+              <View style={styles.mealNutrition}>
+                <View style={styles.caloriesBadge}>
+                  <Text style={styles.calories}>
+                    {Math.round(meal.nutrients.calories)}
+                  </Text>
+                  <Text style={styles.caloriesLabel}>cal</Text>
                 </View>
-              )}
-            </View>
-            <View style={styles.mealNutrition}>
-              <View style={styles.caloriesBadge}>
-                <Text style={styles.calories}>
-                  {Math.round(meal.nutrients.calories)}
+                <Text style={styles.macros}>
+                  P: {Math.round(meal.nutrients.protein)}g • C:{" "}
+                  {Math.round(meal.nutrients.carbs)}g • F:{" "}
+                  {Math.round(meal.nutrients.fat)}g
                 </Text>
-                <Text style={styles.caloriesLabel}>cal</Text>
+                <MaterialIcons
+                  name={isExpanded ? "expand-less" : "expand-more"}
+                  size={22}
+                  color="#0066CC"
+                  style={styles.expandIcon}
+                />
               </View>
-              <Text style={styles.macros}>
-                P: {Math.round(meal.nutrients.protein)}g • C:{" "}
-                {Math.round(meal.nutrients.carbs)}g • F:{" "}
-                {Math.round(meal.nutrients.fat)}g
-              </Text>
-            </View>
+            </TouchableOpacity>
+
+            {isExpanded && (
+              <MealRationale
+                meal={meal}
+                userProfile={userProfile}
+                dayDate={dayDate}
+                mealType={title}
+              />
+            )}
           </View>
         );
       })}
@@ -826,12 +860,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
   },
+  mealItemContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    paddingVertical: 14,
+  },
   mealItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
   },
   mealItemLast: {
     borderBottomWidth: 0,
@@ -911,6 +947,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   favoriteButton: {
-    paddingLeft: 8, // Increases tappable area
+    paddingLeft: 8,
+  },
+  expandIcon: {
+    marginTop: 4,
   },
 });
